@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -23,15 +24,13 @@ var (
 	// cmdlogFile = os.ExpandEnv("${HOME}/.cmdlog")
 	version   = "Undefined"
 	timestamp = "Undefined"
+	homeDir   = os.Getenv("HOME")
 )
 
-func mainLog(c *cli.Context) {
-	// TODO Implement this
-	fmt.Println("Adding a log entry is currently unsupported.")
-}
-
 const (
-	day time.Duration = time.Hour * 24
+	day              time.Duration = time.Hour * 24
+	initialReportLen               = 1024
+	// initialReportLen               = 16864
 )
 
 var magnitudes = []struct {
@@ -42,6 +41,11 @@ var magnitudes = []struct {
 	{time.Hour, "hour"},
 	{time.Minute, "minute"},
 	{time.Second, "second"},
+}
+
+func mainLog(c *cli.Context) {
+	// TODO Implement this
+	fmt.Println("Adding a log entry is currently unsupported.")
 }
 
 // Converts a duration to a string according to magnitudes above
@@ -56,7 +60,7 @@ func formatRelativeTime(diff time.Duration) string {
 		count := diff / mag.mag
 		diff = diff % mag.mag
 		if count > 0 {
-			ret = ret + strconv.Itoa(int(count)) + " " + mag.name
+			ret = ret + strconv.FormatInt(int64(count), 10) + " " + mag.name
 			if count > 1 {
 				ret = ret + "s"
 			}
@@ -64,14 +68,14 @@ func formatRelativeTime(diff time.Duration) string {
 		}
 	}
 
-	return strings.TrimSuffix(ret, " ")
+	return ret + "ago"
 }
 
 // Formats the given timestring (UNIX time) to human readable string
 func formatTime(timestr string) string {
 	timeint, err := strconv.ParseInt(timestr, 10, 64)
 	if err != nil {
-		log.Printf("could not parse %s to integer", timestr)
+		log.Printf("could not parse %s to integer: %v", timestr, err)
 		return timestr
 	}
 	tm := time.Unix(timeint, 0)
@@ -86,55 +90,132 @@ func formatTime(timestr string) string {
 }
 
 // Prepares a single line for display
-func parseCmdLogLine(line string, session string, regex *regexp.Regexp) []string {
+func parseCmdLogLine(line string, session string, regex *regexp.Regexp, out *[]string) {
 	items := strings.SplitN(line, "\t", 3)
 
 	// If session filtering is used and session does not match
 	if session != "" && session != items[1] {
-		return nil
+		return
 	}
 
-	if regex != nil {
-		if ! regex.MatchString(items[2]) {
-			return nil
-		}
+	// If regex is given and it does not match
+	if regex != nil && !regex.MatchString(items[2]) {
+		return
 	}
 
 	items[0] = formatTime(items[0])
+	copy(*out,items)
+}
 
-	ret := items[1] + " " + items[0] + "\t" + items[2]
+// Heuristic to determine the current directory
+func determineDirectory(previous string, cmd string) string {
+	ret := ""
 
-	fmt.Println(ret)
-	return items
+	if cmd == "s" {
+		ret = ".."
+	} else if strings.HasPrefix(cmd, "cd") {
+		parts := strings.SplitN(cmd, " ", 2)
+		if len(parts) == 1 {
+			ret = homeDir
+		} else {
+			ret = parts[1]
+		}
+	} else if strings.HasPrefix(cmd, "Started shell session: ") {
+		parts := strings.SplitN(cmd, " ", 4)
+		ret = parts[3]
+	}
+
+	if filepath.IsAbs(ret) {
+		return ret
+	}
+
+	return filepath.Clean(filepath.Join(previous, ret))
+}
+
+// Add working directories to the report
+func addPwdsToReport(report *[][]string) {
+	sessions := make(map[string][]*[]string)
+
+	for idx, item := range *report {
+		if item[0] != "" {
+			sessions[item[1]] = append(sessions[item[1]], &(*report)[idx])
+		}
+	}
+
+	for _, items := range sessions {
+		cwd := homeDir
+		for _, item := range items {
+			cwd = determineDirectory(cwd, (*item)[2])
+			(*item)[3] = cwd
+		}
+	}
+}
+
+type parseArgs struct {
+	session string
+	grep string
+	pwd bool
+	reverse bool
 }
 
 // Parses and prints out the command log from given reader. Possibly filter by
 // session.
-func parseCmdLog(input io.Reader, session string, grep string) {
+func parseCmdLog(input io.Reader, arg parseArgs) {
 	scanner := bufio.NewScanner(input)
 
 	var re *regexp.Regexp
 	re = nil
-	if grep != "" {
+	if arg.grep != "" {
 		var err error
-		re, err = regexp.Compile(grep)
+		re, err = regexp.Compile(arg.grep)
 		if err != nil {
-			log.Fatal("Failed to compile regexp ", grep, err)
+			log.Fatal("Failed to compile regexp ", arg.grep, err)
 		}
 	}
 
+	// The format for the report structure:
+	// for each element: timestring, session, command, [cwd]
+	// If the strings in the element are empty, it has been filtered out
+	report := make([][]string, initialReportLen)
+	index := 0
+
 	for scanner.Scan() {
-		parseCmdLogLine(scanner.Text(), session, re)
+		if index >= len(report) {
+			report = append(report, []string{})
+		}
+		report[index] = make([]string, 4)
+		parseCmdLogLine(scanner.Text(), arg.session, re, &report[index])
+		index = index + 1
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatal("reading log:", err)
+	}
+
+	if arg.pwd {
+		addPwdsToReport(&report)
+	}
+
+	reportlen := len(report)-1
+	line := ""
+	for idx := range report {
+		pos := idx
+		if arg.reverse {
+			pos = reportlen - idx
+		}
+		if report[pos][0] != "" {
+			line = report[pos][1] + " " +report[pos][0]
+			if arg.pwd {
+				line = line + "\t" + report[pos][3]
+			}
+			line = line + "\t" + report[pos][2]
+			fmt.Println(line)
+		}
 	}
 }
 
 func mainReport(c *cli.Context) {
 	fp := os.Stdin
 	name := c.GlobalString("file")
-	fmt.Println(name)
 	if strings.Compare(name, "-") != 0 {
 		var err error
 		fp, err = os.Open(name)
@@ -143,8 +224,13 @@ func mainReport(c *cli.Context) {
 		}
 		defer fp.Close()
 	}
-	fmt.Println(c.String("session"))
-	parseCmdLog(fp, c.String("session"), c.String("grep"))
+	arg := parseArgs{
+		session: c.String("session"),
+		grep: c.String("grep"),
+		pwd: c.Bool("pwd"),
+		reverse: c.Bool("reverse"),
+	}
+	parseCmdLog(fp, arg)
 }
 
 func main() {
