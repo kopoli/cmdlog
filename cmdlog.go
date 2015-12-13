@@ -235,7 +235,11 @@ func parseCmdLog(input io.Reader, arg parseArgs) {
 			pos = reportlen - idx
 		}
 		if report[pos] != nil && report[pos][0] != "" {
-			line := report[pos][1] + " " + report[pos][0]
+			line := ""
+			if arg.session == "" {
+				line = report[pos][1] + " "
+			}
+			line = line + report[pos][0]
 			if arg.pwd {
 				line = line + "\t" + report[pos][3]
 			}
