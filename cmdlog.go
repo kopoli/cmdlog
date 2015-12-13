@@ -37,21 +37,19 @@ const (
 )
 
 func mainLog(c *cli.Context) {
-	// TODO Implement this
-	// fmt.Println("Adding a log entry is currently unsupported.")
-	// fmt.Println(c.Args())
-
 	args := c.Args()
 	if len(args) < 2 {
 		fmt.Fprintln(os.Stderr, "Error: source and argument are required.")
 		os.Exit(1)
 	}
 
-	cmd := strings.Join(args[1:]," ")
+	cmd := strings.Join(args[1:], " ")
 
+	// change to single line command
 	re := regexp.MustCompile("[\r\n]+")
 	cmd = re.ReplaceAllString(cmd, " ")
 
+	// Filter out unlogged commands
 	for _, filter := range filters {
 		re := regexp.MustCompile(filter)
 		if re.MatchString(cmd) {
@@ -60,7 +58,16 @@ func mainLog(c *cli.Context) {
 	}
 
 	tm := time.Now()
-	fmt.Printf("%d\t%s\t%s\n",tm.Unix(),args[0],cmd)
+	name := c.GlobalString("file")
+	fp, err := os.OpenFile(name, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not open file \"%s\" for writing: %v",
+			name, err)
+		os.Exit(1)
+	}
+	fmt.Fprintf(fp, "%d\t%s\t%s\n", tm.Unix(), args[0], cmd)
+	fp.Close()
+
 }
 
 var magnitudes = []struct {
