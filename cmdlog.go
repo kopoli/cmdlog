@@ -17,7 +17,7 @@ import (
 
 // MajorVersion is the hard coded major version as opposed to the version
 // provided from command line.
-var MajorVersion = "0"
+var MajorVersion = "1"
 
 var (
 	cmdlogFile = os.ExpandEnv("${HOME}/.cmdlog")
