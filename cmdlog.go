@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -85,26 +86,45 @@ func formatTime(timestr string) string {
 }
 
 // Prepares a single line for display
-func parseCmdLogLine(line string, session string) string {
+func parseCmdLogLine(line string, session string, regex *regexp.Regexp) []string {
 	items := strings.SplitN(line, "\t", 3)
 
 	// If session filtering is used and session does not match
 	if session != "" && session != items[1] {
-		return ""
+		return nil
+	}
+
+	if regex != nil {
+		if ! regex.MatchString(items[2]) {
+			return nil
+		}
 	}
 
 	items[0] = formatTime(items[0])
 
-	fmt.Println(items)
+	ret := items[1] + " " + items[0] + "\t" + items[2]
 
-	return ""
+	fmt.Println(ret)
+	return items
 }
 
-func parseCmdLog(input io.Reader, session string) {
+// Parses and prints out the command log from given reader. Possibly filter by
+// session.
+func parseCmdLog(input io.Reader, session string, grep string) {
 	scanner := bufio.NewScanner(input)
+
+	var re *regexp.Regexp
+	re = nil
+	if grep != "" {
+		var err error
+		re, err = regexp.Compile(grep)
+		if err != nil {
+			log.Fatal("Failed to compile regexp ", grep, err)
+		}
+	}
+
 	for scanner.Scan() {
-		// fmt.Println(scanner.Text())
-		parseCmdLogLine(scanner.Text(), session)
+		parseCmdLogLine(scanner.Text(), session, re)
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatal("reading log:", err)
@@ -124,7 +144,7 @@ func mainReport(c *cli.Context) {
 		defer fp.Close()
 	}
 	fmt.Println(c.String("session"))
-	parseCmdLog(fp, c.String("session"))
+	parseCmdLog(fp, c.String("session"), c.String("grep"))
 }
 
 func main() {
@@ -171,6 +191,11 @@ func main() {
 					Name:   "reverse, r",
 					Usage:  "Display command in reverse",
 					EnvVar: "CMDLOG_REVERSE",
+				},
+				cli.StringFlag{
+					Name:   "grep",
+					Usage:  "Grep for a command",
+					EnvVar: "CMDLOG_GREP",
 				},
 			},
 		},
