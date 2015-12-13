@@ -279,7 +279,7 @@ func main() {
 	}
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:   "file",
+			Name:   "file, f",
 			Value:  cmdlogFile,
 			Usage:  "Read commands from FILE",
 			EnvVar: "CMDLOG_FILE",
