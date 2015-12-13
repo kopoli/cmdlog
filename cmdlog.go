@@ -1,9 +1,16 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"github.com/codegangsta/cli"
+	"io"
+	"log"
 	"os"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/codegangsta/cli"
 )
 
 // MajorVersion is the hard coded major version as opposed to the version
@@ -11,10 +18,114 @@ import (
 var MajorVersion = "0"
 
 var (
-	cmdlogFile = os.ExpandEnv("${HOME}/.cmdlog")
-	version    = "Undefined"
-	timestamp  = "Undefined"
+	cmdlogFile = os.ExpandEnv(".cmdlog")
+	// cmdlogFile = os.ExpandEnv("${HOME}/.cmdlog")
+	version   = "Undefined"
+	timestamp = "Undefined"
 )
+
+func mainLog(c *cli.Context) {
+	// TODO Implement this
+	fmt.Println("Adding a log entry is currently unsupported.")
+}
+
+const (
+	day time.Duration = time.Hour * 24
+)
+
+var magnitudes = []struct {
+	mag  time.Duration
+	name string
+}{
+	{day, "day"},
+	{time.Hour, "hour"},
+	{time.Minute, "minute"},
+	{time.Second, "second"},
+}
+
+// Converts a duration to a string according to magnitudes above
+func formatRelativeTime(diff time.Duration) string {
+	var ret string
+
+	if diff.Seconds() < 1.0 {
+		return "Just now"
+	}
+
+	for _, mag := range magnitudes {
+		count := diff / mag.mag
+		diff = diff % mag.mag
+		if count > 0 {
+			ret = ret + strconv.Itoa(int(count)) + " " + mag.name
+			if count > 1 {
+				ret = ret + "s"
+			}
+			ret = ret + " "
+		}
+	}
+
+	return strings.TrimSuffix(ret, " ")
+}
+
+// Formats the given timestring (UNIX time) to human readable string
+func formatTime(timestr string) string {
+	timeint, err := strconv.ParseInt(timestr, 10, 64)
+	if err != nil {
+		log.Printf("could not parse %s to integer", timestr)
+		return timestr
+	}
+	tm := time.Unix(timeint, 0)
+	diff := time.Since(tm)
+
+	if diff.Hours() < 24.0*7 {
+		return formatRelativeTime(diff)
+	}
+
+	tm.Round(time.Second)
+	return tm.String()
+}
+
+// Prepares a single line for display
+func parseCmdLogLine(line string, session string) string {
+	items := strings.SplitN(line, "\t", 3)
+
+	// If session filtering is used and session does not match
+	if session != "" && session != items[1] {
+		return ""
+	}
+
+	items[0] = formatTime(items[0])
+
+	fmt.Println(items)
+
+	return ""
+}
+
+func parseCmdLog(input io.Reader, session string) {
+	scanner := bufio.NewScanner(input)
+	for scanner.Scan() {
+		// fmt.Println(scanner.Text())
+		parseCmdLogLine(scanner.Text(), session)
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal("reading log:", err)
+	}
+}
+
+func mainReport(c *cli.Context) {
+	fp := os.Stdin
+	name := c.GlobalString("file")
+	fmt.Println(name)
+	if strings.Compare(name, "-") != 0 {
+		var err error
+		fp, err = os.Open(name)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer fp.Close()
+	}
+	fmt.Println(c.String("session"))
+	parseCmdLog(fp, c.String("session"))
+}
 
 func main() {
 	app := cli.NewApp()
@@ -32,12 +143,14 @@ func main() {
 
 	app.Commands = []cli.Command{
 		{
-			Name:  "log",
-			Usage: "Log a new item",
+			Name:   "log",
+			Usage:  "Log a new item",
+			Action: mainLog,
 		},
 		{
-			Name:  "report",
-			Usage: "Generate report from the commanad log",
+			Name:   "report",
+			Usage:  "Generate report from the commanad log",
+			Action: mainReport,
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:   "pwd",
@@ -64,7 +177,7 @@ func main() {
 	}
 
 	cli.VersionPrinter = func(c *cli.Context) {
-		fmt.Fprintf(c.App.Writer, "%s %v\n built %v\n", app.Name,
+		fmt.Fprintf(c.App.Writer, "%s %v\nbuilt %v\n", app.Name,
 			app.Version, timestamp)
 	}
 
