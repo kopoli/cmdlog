@@ -20,8 +20,7 @@ import (
 var MajorVersion = "0"
 
 var (
-	cmdlogFile = os.ExpandEnv(".cmdlog")
-	// cmdlogFile = os.ExpandEnv("${HOME}/.cmdlog")
+	cmdlogFile = os.ExpandEnv("${HOME}/.cmdlog")
 	version   = "Undefined"
 	timestamp = "Undefined"
 	homeDir   = os.Getenv("HOME")
@@ -67,7 +66,6 @@ func mainLog(c *cli.Context) {
 	}
 	fmt.Fprintf(fp, "%d\t%s\t%s\n", tm.Unix(), args[0], cmd)
 	fp.Close()
-
 }
 
 var magnitudes = []struct {
