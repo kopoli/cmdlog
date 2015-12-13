@@ -25,13 +25,43 @@ var (
 	version   = "Undefined"
 	timestamp = "Undefined"
 	homeDir   = os.Getenv("HOME")
+	filters   = []string{
+		" *ls? -[thlroa]*$",
+		" *l[shla]*$",
+	}
 )
 
 const (
 	day              time.Duration = time.Hour * 24
-	initialReportLen               = 1024
-	// initialReportLen               = 16864
+	initialReportLen               = 16864
 )
+
+func mainLog(c *cli.Context) {
+	// TODO Implement this
+	// fmt.Println("Adding a log entry is currently unsupported.")
+	// fmt.Println(c.Args())
+
+	args := c.Args()
+	if len(args) < 2 {
+		fmt.Fprintln(os.Stderr, "Error: source and argument are required.")
+		os.Exit(1)
+	}
+
+	cmd := strings.Join(args[1:]," ")
+
+	re := regexp.MustCompile("[\r\n]+")
+	cmd = re.ReplaceAllString(cmd, " ")
+
+	for _, filter := range filters {
+		re := regexp.MustCompile(filter)
+		if re.MatchString(cmd) {
+			return
+		}
+	}
+
+	tm := time.Now()
+	fmt.Printf("%d\t%s\t%s\n",tm.Unix(),args[0],cmd)
+}
 
 var magnitudes = []struct {
 	mag  time.Duration
@@ -41,11 +71,6 @@ var magnitudes = []struct {
 	{time.Hour, "hour"},
 	{time.Minute, "minute"},
 	{time.Second, "second"},
-}
-
-func mainLog(c *cli.Context) {
-	// TODO Implement this
-	fmt.Println("Adding a log entry is currently unsupported.")
 }
 
 // Converts a duration to a string according to magnitudes above
@@ -60,7 +85,8 @@ func formatRelativeTime(diff time.Duration) string {
 		count := diff / mag.mag
 		diff = diff % mag.mag
 		if count > 0 {
-			ret = ret + strconv.FormatInt(int64(count), 10) + " " + mag.name
+			ret = ret + strconv.FormatInt(int64(count), 10) + " " +
+				mag.name
 			if count > 1 {
 				ret = ret + "s"
 			}
@@ -85,12 +111,12 @@ func formatTime(timestr string) string {
 		return formatRelativeTime(diff)
 	}
 
-	tm.Round(time.Second)
-	return tm.String()
+	return tm.Format("2006-01-02T15:04:05")
 }
 
 // Prepares a single line for display
-func parseCmdLogLine(line string, session string, regex *regexp.Regexp, out *[]string) {
+func parseCmdLogLine(line string, session string, regex *regexp.Regexp,
+	out *[]string) {
 	items := strings.SplitN(line, "\t", 3)
 
 	// If session filtering is used and session does not match
@@ -104,7 +130,7 @@ func parseCmdLogLine(line string, session string, regex *regexp.Regexp, out *[]s
 	}
 
 	items[0] = formatTime(items[0])
-	copy(*out,items)
+	copy(*out, items)
 }
 
 // Heuristic to determine the current directory
@@ -137,7 +163,7 @@ func addPwdsToReport(report *[][]string) {
 	sessions := make(map[string][]*[]string)
 
 	for idx, item := range *report {
-		if item[0] != "" {
+		if item != nil && item[0] != "" {
 			sessions[item[1]] = append(sessions[item[1]], &(*report)[idx])
 		}
 	}
@@ -151,10 +177,11 @@ func addPwdsToReport(report *[][]string) {
 	}
 }
 
+// Extendable list of arguments for the parseCmdLog function
 type parseArgs struct {
 	session string
-	grep string
-	pwd bool
+	grep    string
+	pwd     bool
 	reverse bool
 }
 
@@ -195,15 +222,15 @@ func parseCmdLog(input io.Reader, arg parseArgs) {
 		addPwdsToReport(&report)
 	}
 
-	reportlen := len(report)-1
-	line := ""
+	// Print out the report
+	reportlen := len(report) - 1
 	for idx := range report {
 		pos := idx
 		if arg.reverse {
 			pos = reportlen - idx
 		}
-		if report[pos][0] != "" {
-			line = report[pos][1] + " " +report[pos][0]
+		if report[pos] != nil && report[pos][0] != "" {
+			line := report[pos][1] + " " + report[pos][0]
 			if arg.pwd {
 				line = line + "\t" + report[pos][3]
 			}
@@ -226,8 +253,8 @@ func mainReport(c *cli.Context) {
 	}
 	arg := parseArgs{
 		session: c.String("session"),
-		grep: c.String("grep"),
-		pwd: c.Bool("pwd"),
+		grep:    c.String("grep"),
+		pwd:     c.Bool("pwd"),
 		reverse: c.Bool("reverse"),
 	}
 	parseCmdLog(fp, arg)
@@ -238,6 +265,13 @@ func main() {
 	app.Name = os.Args[0]
 	app.Usage = "Command logging"
 	app.Version = fmt.Sprintf("%s-%s", MajorVersion, version)
+	app.Copyright = "MIT"
+	app.Authors = []cli.Author{
+		{
+			Name:  "Kalle Kankare",
+			Email: "kalle.kankare@iki.fi",
+		},
+	}
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:   "file",
@@ -250,12 +284,12 @@ func main() {
 	app.Commands = []cli.Command{
 		{
 			Name:   "log",
-			Usage:  "Log a new item",
+			Usage:  "Log a new item. \n\n   Arguments: <source> <command> [args ...]",
 			Action: mainLog,
 		},
 		{
 			Name:   "report",
-			Usage:  "Generate report from the commanad log",
+			Usage:  "Generate report from the command log",
 			Action: mainReport,
 			Flags: []cli.Flag{
 				cli.BoolFlag{
