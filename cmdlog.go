@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
 	"strings"
-	"time"
 
 	cmdlib "./lib"
 	"github.com/codegangsta/cli"
@@ -20,10 +18,6 @@ var (
 	cmdlogFile = os.ExpandEnv("${HOME}/.cmdlog")
 	version    = "Undefined"
 	timestamp  = "Undefined"
-	filters    = []string{
-		" *ls? -[thlroa]*$",
-		" *l[shla]*$",
-	}
 )
 
 func mainLog(c *cli.Context) {
@@ -33,29 +27,14 @@ func mainLog(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	cmd := strings.Join(args[1:], " ")
-
-	// change to single line command
-	re := regexp.MustCompile("[\r\n]+")
-	cmd = re.ReplaceAllString(cmd, " ")
-
-	// Filter out unlogged commands
-	for _, filter := range filters {
-		re := regexp.MustCompile(filter)
-		if re.MatchString(cmd) {
-			return
-		}
-	}
-
-	tm := time.Now()
-	name := c.GlobalString("file")
-	fp, err := os.OpenFile(name, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	logfile := c.GlobalString("file")
+	fp, err := os.OpenFile(logfile,os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not open file \"%s\" for writing: %v",
-			name, err)
+			logfile, err)
 		os.Exit(1)
 	}
-	fmt.Fprintf(fp, "%d\t%s\t%s\n", tm.Unix(), args[0], cmd)
+	cmdlib.AppendLine(fp, args[0], args[1:])
 	fp.Close()
 }
 

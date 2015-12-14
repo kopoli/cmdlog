@@ -1,4 +1,4 @@
-package report
+package cmdlib
 
 import (
 	"bufio"
