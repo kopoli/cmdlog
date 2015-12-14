@@ -15,12 +15,12 @@ import (
 
 const (
 	day               time.Duration = time.Hour * 24
-	initialReportLen                = 16864
-	maximumLineLength               = 256 * 1024
 )
 
 var (
 	homeDir = os.Getenv("HOME")
+	initialReportLen                = 16864
+	maximumLineLength               = 256 * 1024
 )
 
 var magnitudes = []struct {
