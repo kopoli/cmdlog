@@ -16,7 +16,7 @@ var (
 )
 
 // AppendLine creates a log line to the given logfile
-func AppendLine(logfile io.Writer, session string, args []string) error {
+func AppendLine(logfile io.Writer, session string, args []string) {
 	cmd := strings.Join(args, " ")
 
 	// change to single line command
@@ -27,10 +27,10 @@ func AppendLine(logfile io.Writer, session string, args []string) error {
 	for _, filter := range filters {
 		re := regexp.MustCompile(filter)
 		if re.MatchString(cmd) {
-			return nil
+			return
 		}
 	}
 
 	fmt.Fprintf(logfile, "%d\t%s\t%s\n", time.Now().Unix(), session, cmd)
-	return nil
+	return
 }
