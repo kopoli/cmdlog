@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime/pprof"
 	"strings"
 
 	cmdlib "./lib"
@@ -20,6 +21,26 @@ var (
 	timestamp  = "Undefined"
 )
 
+type profiler struct {
+}
+
+func createProfiler(outfile string) profiler {
+	ret := profiler{}
+
+	fp, err := os.Create(outfile)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error: Could not create profile file",
+			outfile, err)
+		os.Exit(1)
+	}
+	pprof.StartCPUProfile(fp)
+	return ret
+}
+
+func (p *profiler) deleteProfiler() {
+	pprof.StopCPUProfile()
+}
+
 func mainLog(c *cli.Context) {
 	args := c.Args()
 	if len(args) < 2 {
@@ -28,7 +49,7 @@ func mainLog(c *cli.Context) {
 	}
 
 	logfile := c.GlobalString("file")
-	fp, err := os.OpenFile(logfile,os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	fp, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not open file \"%s\" for writing: %v",
 			logfile, err)
@@ -39,6 +60,13 @@ func mainLog(c *cli.Context) {
 }
 
 func mainReport(c *cli.Context) {
+	proffile := c.GlobalString("profile")
+	var prof profiler
+	if proffile != "" {
+		prof = createProfiler(c.GlobalString("profile"))
+		defer prof.deleteProfiler()
+	}
+
 	fp := os.Stdin
 	name := c.GlobalString("file")
 	if strings.Compare(name, "-") != 0 {
@@ -76,6 +104,11 @@ func main() {
 			Value:  cmdlogFile,
 			Usage:  "Read commands from FILE",
 			EnvVar: "CMDLOG_FILE",
+		},
+		cli.StringFlag{
+			Name:   "profile",
+			Usage:  "Create a CPU profile of the runtime",
+			EnvVar: "CMDLOG_PROFILE",
 		},
 	}
 
