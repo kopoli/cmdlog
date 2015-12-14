@@ -21,18 +21,19 @@ var MajorVersion = "1"
 
 var (
 	cmdlogFile = os.ExpandEnv("${HOME}/.cmdlog")
-	version   = "Undefined"
-	timestamp = "Undefined"
-	homeDir   = os.Getenv("HOME")
-	filters   = []string{
+	version    = "Undefined"
+	timestamp  = "Undefined"
+	homeDir    = os.Getenv("HOME")
+	filters    = []string{
 		" *ls? -[thlroa]*$",
 		" *l[shla]*$",
 	}
 )
 
 const (
-	day              time.Duration = time.Hour * 24
-	initialReportLen               = 16864
+	day               time.Duration = time.Hour * 24
+	initialReportLen                = 16864
+	maximumLineLength               = 256 * 1024
 )
 
 func mainLog(c *cli.Context) {
@@ -193,7 +194,7 @@ type parseArgs struct {
 // Parses and prints out the command log from given reader. Possibly filter by
 // session.
 func parseCmdLog(input io.Reader, arg parseArgs) {
-	scanner := bufio.NewScanner(input)
+	reader := bufio.NewReaderSize(input, maximumLineLength)
 
 	var re *regexp.Regexp
 	re = nil
@@ -211,16 +212,22 @@ func parseCmdLog(input io.Reader, arg parseArgs) {
 	report := make([][]string, initialReportLen)
 	index := 0
 
-	for scanner.Scan() {
+	for {
+		line, _, err := reader.ReadLine()
+
+		if err == io.EOF {
+			break
+		}
 		if index >= len(report) {
 			report = append(report, []string{})
 		}
 		report[index] = make([]string, 4)
-		parseCmdLogLine(scanner.Text(), arg.session, re, &report[index])
+		parseCmdLogLine(string(line), arg.session, re, &report[index])
 		index = index + 1
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal("reading log:", err)
+
+		if err != nil {
+			log.Fatal("Error reading log:", err)
+		}
 	}
 
 	if arg.pwd {
