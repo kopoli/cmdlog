@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 	"runtime/pprof"
 	"strings"
 
@@ -22,23 +23,43 @@ var (
 )
 
 type profiler struct {
+	cpuproffile string
+	memproffile string
 }
 
-func createProfiler(outfile string) profiler {
-	ret := profiler{}
-
+func createProfileFile(outfile string) *os.File {
 	fp, err := os.Create(outfile)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error: Could not create profile file",
 			outfile, err)
 		os.Exit(1)
 	}
-	pprof.StartCPUProfile(fp)
+	return fp
+}
+
+func createProfiler(cpuproffile, memproffile string) profiler {
+	ret := profiler{
+		cpuproffile: cpuproffile,
+		memproffile: memproffile,
+	}
+
+	if cpuproffile != "" {
+		fp := createProfileFile(cpuproffile)
+		runtime.SetCPUProfileRate(1000)
+		pprof.StartCPUProfile(fp)
+	}
 	return ret
 }
 
 func (p *profiler) deleteProfiler() {
-	pprof.StopCPUProfile()
+	if p.cpuproffile != "" {
+		pprof.StopCPUProfile()
+	}
+	if p.memproffile != "" {
+		fp := createProfileFile(p.memproffile)
+		defer fp.Close()
+		pprof.WriteHeapProfile(fp)
+	}
 }
 
 func mainLog(c *cli.Context) {
@@ -63,7 +84,7 @@ func mainReport(c *cli.Context) {
 	proffile := c.GlobalString("profile")
 	var prof profiler
 	if proffile != "" {
-		prof = createProfiler(c.GlobalString("profile"))
+		prof = createProfiler(c.GlobalString("profile"), c.GlobalString("memprofile"))
 		defer prof.deleteProfiler()
 	}
 
@@ -109,6 +130,11 @@ func main() {
 			Name:   "profile",
 			Usage:  "Create a CPU profile of the runtime",
 			EnvVar: "CMDLOG_PROFILE",
+		},
+		cli.StringFlag{
+			Name:   "memprofile",
+			Usage:  "Create a memory profile of the runtime",
+			EnvVar: "CMDLOG_MEMPROFILE",
 		},
 	}
 
