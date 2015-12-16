@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -61,7 +60,7 @@ func FormatRelativeTime(diff time.Duration) string {
 func FormatTime(timestr string) string {
 	timeint, err := strconv.ParseInt(timestr, 10, 64)
 	if err != nil {
-		log.Printf("could not parse %s to integer: %v", timestr, err)
+		Warningln("could not parse %s to integer: %v", timestr, err)
 		return timestr
 	}
 	tm := time.Unix(timeint, 0)
@@ -104,6 +103,7 @@ type ParseArgs struct {
 // ParseCmdLog Parses and prints out the command log from given
 // reader. Possibly filter by session.
 func ParseCmdLog(input io.Reader, arg ParseArgs) {
+	defer Recover()
 	reader := bufio.NewReaderSize(input, maximumLineLength)
 
 	var re *regexp.Regexp
@@ -112,7 +112,7 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) {
 		var err error
 		re, err = regexp.Compile(arg.Grep)
 		if err != nil {
-			log.Fatal("Failed to compile regexp ", arg.Grep, err)
+			Panicln("Failed to compile regexp \"", arg.Grep,"\": ", err)
 		}
 	}
 
@@ -136,7 +136,7 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) {
 		index = index + 1
 
 		if err != nil {
-			log.Fatal("Error reading log:", err)
+			Panicln("Error reading log: ", err)
 		}
 	}
 
