@@ -177,13 +177,13 @@ func main() {
 	}
 
 	cli.VersionPrinter = func(c *cli.Context) {
-		fmt.Fprintf(c.App.Writer, "%s %v\nbuilt %v\n", app.Name,
-			app.Version, timestamp)
+		fmt.Fprintf(c.App.Writer, "%s %v\nbuilt %v with Go %v\n",
+			app.Name, app.Version, timestamp, runtime.Version())
 	}
 
 	err := app.Run(os.Args)
 	if err != nil {
-		cmdlib.Panicln("Running the application: ",err)
+		cmdlib.Panicln("Running the application: ", err)
 		defer cmdlib.Recover()
 	}
 }
