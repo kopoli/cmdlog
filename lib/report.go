@@ -13,13 +13,13 @@ import (
 )
 
 const (
-	day               time.Duration = time.Hour * 24
+	day time.Duration = time.Hour * 24
 )
 
 var (
-	homeDir = os.Getenv("HOME")
-	initialReportLen                = 16864
-	maximumLineLength               = 256 * 1024
+	homeDir           = os.Getenv("HOME")
+	initialReportLen  = 16864
+	maximumLineLength = 256 * 1024
 )
 
 var magnitudes = []struct {
@@ -112,7 +112,7 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) {
 		var err error
 		re, err = regexp.Compile(arg.Grep)
 		if err != nil {
-			Panicln("Failed to compile regexp \"", arg.Grep,"\": ", err)
+			Panicln("Failed to compile regexp \"", arg.Grep, "\": ", err)
 		}
 	}
 
@@ -128,16 +128,15 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) {
 		if err == io.EOF {
 			break
 		}
+		if err != nil {
+			Panicln("Error reading log: ", err)
+		}
 		if index >= len(report) {
 			report = append(report, []string{})
 		}
 		report[index] = make([]string, 4)
 		ParseCmdLogLine(string(line), arg.Session, re, &report[index])
 		index = index + 1
-
-		if err != nil {
-			Panicln("Error reading log: ", err)
-		}
 	}
 
 	if arg.Pwd {
