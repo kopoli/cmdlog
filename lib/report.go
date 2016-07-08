@@ -98,6 +98,7 @@ type ParseArgs struct {
 	Grep    string
 	Pwd     bool
 	Reverse bool
+	Output  io.Writer
 }
 
 // ParseCmdLog Parses and prints out the command log from given
@@ -160,7 +161,7 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) {
 				line = line + "\t" + report[pos][3]
 			}
 			line = line + "\t" + report[pos][2]
-			fmt.Println(line)
+			fmt.Fprintln(arg.Output, line)
 		}
 	}
 }

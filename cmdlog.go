@@ -101,6 +101,7 @@ func mainReport(c *cli.Context) {
 		Grep:    c.String("grep"),
 		Pwd:     c.Bool("pwd"),
 		Reverse: c.Bool("reverse"),
+		Output: os.Stdout,
 	}
 	cmdlib.ParseCmdLog(fp, arg)
 }
