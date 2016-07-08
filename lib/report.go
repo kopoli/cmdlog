@@ -77,6 +77,11 @@ func ParseCmdLogLine(line string, session string, regex *regexp.Regexp,
 	out *[]string) {
 	items := strings.SplitN(line, "\t", 3)
 
+	// The format of the line is improper
+	if len(items) != 3 {
+		return
+	}
+
 	// If session filtering is used and session does not match
 	if session != "" && session != items[1] {
 		return
