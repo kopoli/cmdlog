@@ -7,8 +7,7 @@ import (
 	"testing"
 )
 
-func BenchmarkParseCmdLog_Whole(b *testing.B) {
-	buf := bytes.NewBufferString(`
+var testData string = `
 1463382163	zsh-5604-20160516	Started shell session
 1463382167	zsh-5604-20160516	Exited shell session
 1463382174	zsh-16168-20160503	gobu -help
@@ -19,8 +18,22 @@ func BenchmarkParseCmdLog_Whole(b *testing.B) {
 1463382323	zsh-26914-20160504	./cmdlog report -help
 1463382327	zsh-26914-20160504	./cmdlog report -reverse -grep ls
 1463382333	zsh-26914-20160504	thelm --title cmdlog --hide-initial --single-arg ./cmdlog report --reverse --grep
+`
 
-`)
+func BenchmarkParseCmdLog_Regexp(b *testing.B) {
+	buf := bytes.NewBufferString(testData)
+	pa := ParseArgs{
+		Output: ioutil.Discard,
+		Grep: "dpkg",
+	}
+
+	for i := 0; i < b.N; i++ {
+		ParseCmdLog(buf, pa)
+	}
+}
+
+func BenchmarkParseCmdLog_Whole(b *testing.B) {
+	buf := bytes.NewBufferString(testData)
 	pa := ParseArgs{
 		Output: ioutil.Discard,
 	}
