@@ -103,17 +103,15 @@ type ParseArgs struct {
 
 // ParseCmdLog Parses and prints out the command log from given
 // reader. Possibly filter by session.
-func ParseCmdLog(input io.Reader, arg ParseArgs) {
-	defer Recover()
+func ParseCmdLog(input io.Reader, arg ParseArgs) (err error) {
 	reader := bufio.NewReaderSize(input, maximumLineLength)
 
 	var re *regexp.Regexp
 	re = nil
 	if arg.Grep != "" {
-		var err error
 		re, err = regexp.Compile(arg.Grep)
 		if err != nil {
-			Panicln("Failed to compile regexp \"", arg.Grep, "\": ", err)
+			return ErrorLn("Failed to compile regexp \"", arg.Grep, "\": ", err)
 		}
 	}
 
@@ -130,7 +128,7 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) {
 			break
 		}
 		if err != nil {
-			Panicln("Error reading log: ", err)
+			return ErrorLn("Error reading log: ", err)
 		}
 		if index >= len(report) {
 			report = append(report, []string{})
@@ -164,6 +162,7 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) {
 			fmt.Fprintln(arg.Output, line)
 		}
 	}
+	return nil
 }
 
 // Heuristic to determine the current directory

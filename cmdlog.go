@@ -30,7 +30,7 @@ type profiler struct {
 func createProfileFile(outfile string) *os.File {
 	fp, err := os.Create(outfile)
 	if err != nil {
-		cmdlib.Panicln("Could not create profile file", outfile, err)
+		cmdlib.FatalErr(err, "Could not create profile file", outfile)
 	}
 	return fp
 }
@@ -61,24 +61,22 @@ func (p *profiler) deleteProfiler() {
 }
 
 func mainLog(c *cli.Context) {
-	defer cmdlib.Recover()
 	args := c.Args()
 	if len(args) < 2 {
-		cmdlib.Panicln("Source and argument are required.")
+		cmdlib.FatalErr(nil, "Source and argument are required.")
 	}
 
 	logfile := c.GlobalString("file")
 	fp, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
-		cmdlib.Panicln("Could not open file \"", logfile, "\" for writing:",
-			logfile, err)
+		cmdlib.FatalErr(err, "Could not open file \"", logfile, "\" for writing",
+			logfile)
 	}
 	cmdlib.AppendLine(fp, args[0], args[1:])
 	fp.Close()
 }
 
 func mainReport(c *cli.Context) {
-	defer cmdlib.Recover()
 	proffile := c.GlobalString("profile")
 	var prof profiler
 	if proffile != "" {
@@ -101,9 +99,12 @@ func mainReport(c *cli.Context) {
 		Grep:    c.String("grep"),
 		Pwd:     c.Bool("pwd"),
 		Reverse: c.Bool("reverse"),
-		Output: os.Stdout,
+		Output:  os.Stdout,
 	}
-	cmdlib.ParseCmdLog(fp, arg)
+	err := cmdlib.ParseCmdLog(fp, arg)
+	if err != nil {
+		cmdlib.FatalErr(err, "Reporting failed")
+	}
 }
 
 func main() {
@@ -184,7 +185,6 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
-		cmdlib.Panicln("Running the application: ", err)
-		defer cmdlib.Recover()
+		cmdlib.FatalErr(err, "Running the application failed")
 	}
 }
