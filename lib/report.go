@@ -2,7 +2,6 @@ package cmdlib
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -158,8 +157,8 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) (err error) {
 			if arg.Pwd {
 				line = line + "\t" + report[pos][3]
 			}
-			line = line + "\t" + report[pos][2]
-			fmt.Fprintln(arg.Output, line)
+			line = line + "\t" + report[pos][2] + "\n"
+			arg.Output.Write([]byte(line))
 		}
 	}
 	return nil
