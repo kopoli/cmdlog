@@ -10,8 +10,8 @@ import (
 
 var (
 	filters = []string{
-		" *ls? -[thlroa]*$",
-		" *l[shla]*$",
+		" *ls? -[thlroa]* *$",
+		" *l[shla]* *$",
 	}
 )
 
