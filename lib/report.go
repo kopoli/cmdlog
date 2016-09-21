@@ -113,6 +113,8 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) (err error) {
 	var re *regexp.Regexp
 	re = nil
 	if arg.Grep != "" {
+		re = regexp.MustCompile("\\s+")
+		arg.Grep = re.ReplaceAllString(arg.Grep, ".*")
 		re, err = regexp.Compile(arg.Grep)
 		if err != nil {
 			return ErrorLn("Failed to compile regexp \"", arg.Grep, "\": ", err)
