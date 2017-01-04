@@ -19,6 +19,7 @@ var (
 	homeDir           = os.Getenv("HOME")
 	initialReportLen  = 16864
 	maximumLineLength = 256 * 1024
+	timeFormat        = "2006-01-02T15:04:05"
 )
 
 var magnitudes = []struct {
@@ -56,12 +57,7 @@ func FormatRelativeTime(diff time.Duration) string {
 }
 
 // FormatTime formats the given timestring (UNIX time) to human readable string
-func FormatTime(timestr string) string {
-	timeint, err := strconv.ParseInt(timestr, 10, 64)
-	if err != nil {
-		Warningln("could not parse %s to integer: %v", timestr, err)
-		return timestr
-	}
+func FormatTime(timeint int64) string {
 	tm := time.Unix(timeint, 0)
 	diff := time.Since(tm)
 
@@ -69,11 +65,11 @@ func FormatTime(timestr string) string {
 		return FormatRelativeTime(diff)
 	}
 
-	return tm.Format("2006-01-02T15:04:05")
+	return tm.Format(timeFormat)
 }
 
 // ParseCmdLogLine prepares a single line for display
-func ParseCmdLogLine(line string, session string, regex *regexp.Regexp,
+func ParseCmdLogLine(line string, session string, since int64, regex *regexp.Regexp,
 	out *[]string) {
 	items := strings.SplitN(line, "\t", 3)
 
@@ -92,13 +88,22 @@ func ParseCmdLogLine(line string, session string, regex *regexp.Regexp,
 		return
 	}
 
-	items[0] = FormatTime(items[0])
+	timeint, err := strconv.ParseInt(items[0], 10, 64)
+	if err != nil {
+		items[0] = "<invalid>"
+	} else if timeint < since {
+		return
+	} else {
+		items[0] = FormatTime(timeint)
+	}
+
 	copy(*out, items)
 }
 
 // ParseArgs is extendable list of arguments for the parseCmdLog function
 type ParseArgs struct {
 	Session string
+	Since   string
 	Grep    string
 	Pwd     bool
 	Reverse bool
@@ -121,6 +126,15 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) (err error) {
 		}
 	}
 
+	var since int64 = 0
+	if arg.Since != "" {
+		sincetm, err := time.ParseInLocation(timeFormat, arg.Since, time.Local)
+		if err != nil {
+			return ErrorLn("Parsing given since failed:", err)
+		}
+		since = sincetm.Unix()
+	}
+
 	// The format for the report structure:
 	// for each element: timestring, session, command, [cwd]
 	// If the strings in the element are empty, it has been filtered out
@@ -140,7 +154,7 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) (err error) {
 			report = append(report, []string{})
 		}
 		report[index] = make([]string, 4)
-		ParseCmdLogLine(string(line), arg.Session, re, &report[index])
+		ParseCmdLogLine(string(line), arg.Session, since, re, &report[index])
 		index = index + 1
 	}
 

@@ -96,6 +96,7 @@ func mainReport(c *cli.Context) {
 	}
 	arg := cmdlib.ParseArgs{
 		Session: c.String("session"),
+		Since:   c.String("since"),
 		Grep:    c.String("grep"),
 		Pwd:     c.Bool("pwd"),
 		Reverse: c.Bool("reverse"),
