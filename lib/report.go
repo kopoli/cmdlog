@@ -6,8 +6,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -141,6 +143,26 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) (err error) {
 	report := make([][]string, initialReportLen)
 	index := 0
 
+	type reportLine struct {
+		line  []byte
+		index int
+	}
+	jobs := make(chan reportLine, 10)
+
+	wg := sync.WaitGroup{}
+	worker := func(jobs <-chan reportLine) {
+		for rl := range jobs {
+			report[rl.index] = make([]string, 4)
+			ParseCmdLogLine(string(rl.line), arg.Session,
+				since, re, &report[rl.index])
+		}
+		wg.Done()
+	}
+	for i := 0; i < runtime.NumCPU()*2; i++ {
+		wg.Add(1)
+		go worker(jobs)
+	}
+
 	for {
 		line, _, err := reader.ReadLine()
 
@@ -153,10 +175,11 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) (err error) {
 		if index >= len(report) {
 			report = append(report, []string{})
 		}
-		report[index] = make([]string, 4)
-		ParseCmdLogLine(string(line), arg.Session, since, re, &report[index])
+		jobs <- reportLine{line, index}
 		index = index + 1
 	}
+	close(jobs)
+	wg.Wait()
 
 	if arg.Pwd {
 		AddPwdsToReport(&report)
