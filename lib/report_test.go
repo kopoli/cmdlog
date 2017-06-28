@@ -24,7 +24,7 @@ func BenchmarkParseCmdLog_Regexp(b *testing.B) {
 	buf := bytes.NewBufferString(testData)
 	pa := ParseArgs{
 		Output: ioutil.Discard,
-		Grep: "dpkg",
+		Grep:   "dpkg",
 	}
 
 	for i := 0; i < b.N; i++ {
@@ -59,4 +59,3 @@ func BenchmarkParseCmdLogLine_RegexpMatch(b *testing.B) {
 			"", 0, re, &out)
 	}
 }
-
