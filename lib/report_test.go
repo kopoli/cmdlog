@@ -5,7 +5,57 @@ import (
 	"io/ioutil"
 	"regexp"
 	"testing"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/pmezard/go-difflib/difflib"
 )
+
+func structEquals(a, b interface{}) bool {
+	return spew.Sdump(a) == spew.Sdump(b)
+}
+
+func diffStr(a, b interface{}) (ret string) {
+	diff := difflib.UnifiedDiff{
+		A:        difflib.SplitLines(spew.Sdump(a)),
+		B:        difflib.SplitLines(spew.Sdump(b)),
+		FromFile: "Expected",
+		ToFile:   "Received",
+		Context:  3,
+	}
+
+	ret, _ = difflib.GetUnifiedDiffString(diff)
+	return
+}
+
+func compare(t *testing.T, msg string, a, b interface{}) {
+	if !structEquals(a, b) {
+		t.Error(msg, "\n", diffStr(a, b))
+	}
+}
+
+func TestParseCmdLog(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		arg     ParseArgs
+		output  string
+		wantErr bool
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			input := bytes.NewBufferString(tt.input)
+			buf := &bytes.Buffer{}
+			tt.arg.Output = buf
+			if err := ParseCmdLog(input, tt.arg); (err != nil) != tt.wantErr {
+				t.Fatalf("ParseCmdLog() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			compare(t, "Outputs differ", tt.output, buf.String())
+		})
+	}
+}
 
 var testData string = `
 1463382163	zsh-5604-20160516	Started shell session
