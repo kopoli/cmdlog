@@ -117,10 +117,9 @@ type ParseArgs struct {
 func ParseCmdLog(input io.Reader, arg ParseArgs) (err error) {
 	reader := bufio.NewReaderSize(input, maximumLineLength)
 
-	var re *regexp.Regexp
-	re = nil
+	var re *regexp.Regexp = nil
 	if arg.Grep != "" {
-		re = regexp.MustCompile("\\s+")
+		re = regexp.MustCompile(`\s+`)
 		arg.Grep = re.ReplaceAllString(arg.Grep, ".*")
 		re, err = regexp.Compile(arg.Grep)
 		if err != nil {
