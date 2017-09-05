@@ -237,6 +237,11 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) (err error) {
 		if arg.Reverse {
 			pos = reportlen - idx
 		}
+		if report[pos] != nil && len(report[pos]) != 4 {
+			debugTrace("report line is not nil, but len", len(report[pos]),
+				"!= 4 pos", pos, "reportlen", reportlen)
+		}
+
 		if len(report[pos]) == 4 && report[pos][0] != "" {
 			line := ""
 			if arg.Session == "" {
