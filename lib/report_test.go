@@ -109,3 +109,45 @@ func BenchmarkParseCmdLogLine_RegexpMatch(b *testing.B) {
 			"", 0, re, &out)
 	}
 }
+
+func BenchmarkParseCmdLogLineNoAlloc(b *testing.B) {
+	out := make([]string, 4)
+	for i := 0; i < b.N; i++ {
+		ParseCmdLogLineNoAlloc("1450120005	zsh-2755-20151214	go test",
+			"", 0, nil, &out)
+	}
+}
+
+func BenchmarkParseCmdLogLineNoAlloc_RegexpMatch(b *testing.B) {
+	out := make([]string, 4)
+	re := regexp.MustCompile("go test")
+	for i := 0; i < b.N; i++ {
+		ParseCmdLogLineNoAlloc("1450120005	zsh-2755-20151214	go test",
+			"", 0, re, &out)
+	}
+}
+
+func TestParseCmdLogLineNoAlloc(t *testing.T) {
+	tests := []struct {
+		name    string
+		line    string
+		session string
+		since   int64
+		regex   *regexp.Regexp
+		out     []string
+	}{
+		{"Normal line", "1450120005	zsh-2755-20151214	go test", "", 0, nil,
+			[]string{"2015-12-14T21:06:45", "zsh-2755-20151214", "go test"}},
+	}
+	out := []string{"", "", ""}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ParseCmdLogLineNoAlloc(tt.line, tt.session, tt.since, tt.regex, &out)
+		})
+		for i := range out {
+			if tt.out[i] != out[i] {
+				t.Error("Invalid field", i, "Expected:", tt.out[i], "Got:", out[i])
+			}
+		}
+	}
+}

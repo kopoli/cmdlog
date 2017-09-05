@@ -102,6 +102,52 @@ func ParseCmdLogLine(line string, session string, since int64, regex *regexp.Reg
 	copy(*out, items)
 }
 
+// ParseCmdLogLineNoAlloc prepares a single line without unnecessary allocation.
+func ParseCmdLogLineNoAlloc(line string, session string, since int64, regex *regexp.Regexp,
+	out *[]string) {
+
+	var pos [2]int
+	start := 0
+	for i := range pos {
+		// if start >= len(line) {
+		// 	panic(fmt.Sprint("report line is of invalid format: length: ",
+		// 		len(line), " Contents:", line))
+		// 	// return
+		// }
+		relpos := strings.Index(line[start:], "\t")
+
+		// The format of the line is improper
+		if relpos < 0 {
+			return
+		}
+
+		pos[i] = relpos + start + 1
+		start = pos[i] + 1
+	}
+
+	// If session filtering is used and session does not match
+	if session != "" && session != line[pos[0]:pos[1]-1] {
+		return
+	}
+
+	// If regex is given and it does not match
+	if regex != nil && !regex.MatchString(line[pos[1]:]) {
+		return
+	}
+
+	timeint, err := strconv.ParseInt(line[:pos[0]-1], 10, 64)
+	if err != nil {
+		(*out)[0] = "<invalid>"
+	} else if timeint < since {
+		return
+	} else {
+		(*out)[0] = FormatTime(timeint)
+	}
+
+	(*out)[1] = line[pos[0] : pos[1]-1]
+	(*out)[2] = line[pos[1]:]
+}
+
 // ParseArgs is extendable list of arguments for the parseCmdLog function
 type ParseArgs struct {
 	Session string
@@ -152,7 +198,7 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) (err error) {
 	worker := func(jobs <-chan reportLine) {
 		for rl := range jobs {
 			report[rl.index] = make([]string, 4)
-			ParseCmdLogLine(string(rl.line), arg.Session,
+			ParseCmdLogLineNoAlloc(string(rl.line), arg.Session,
 				since, re, &report[rl.index])
 		}
 		wg.Done()
