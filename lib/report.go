@@ -189,7 +189,7 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) (err error) {
 	index := 0
 
 	type reportLine struct {
-		line  []byte
+		line  string
 		index int
 	}
 	jobs := make(chan reportLine, 10)
@@ -209,7 +209,7 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) (err error) {
 	}
 
 	for {
-		line, _, err := reader.ReadLine()
+		line, err := reader.ReadString('\n')
 
 		if err == io.EOF {
 			break
@@ -246,7 +246,7 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) (err error) {
 			if arg.Pwd {
 				line = line + "\t" + report[pos][3]
 			}
-			line = line + "\t" + report[pos][2] + "\n"
+			line = line + "\t" + report[pos][2]
 			arg.Output.Write([]byte(line))
 		}
 	}
