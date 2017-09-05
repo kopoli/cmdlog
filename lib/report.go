@@ -19,7 +19,7 @@ const (
 
 var (
 	homeDir           = os.Getenv("HOME")
-	initialReportLen  = 128
+	initialReportLen  = 1024 * 128
 	maximumLineLength = 256 * 1024
 	timeFormat        = "2006-01-02T15:04:05"
 )
@@ -187,6 +187,7 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) (err error) {
 	// If the strings in the element are empty, it has been filtered out
 	report := make([][]string, initialReportLen)
 	index := 0
+	reportLock := sync.RWMutex{}
 
 	type reportLine struct {
 		line  string
@@ -197,9 +198,11 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) (err error) {
 	wg := sync.WaitGroup{}
 	worker := func(jobs <-chan reportLine) {
 		for rl := range jobs {
+			reportLock.RLock()
 			report[rl.index] = make([]string, 4)
 			ParseCmdLogLineNoAlloc(string(rl.line), arg.Session,
 				since, re, &report[rl.index])
+			reportLock.RUnlock()
 		}
 		wg.Done()
 	}
@@ -218,7 +221,9 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) (err error) {
 			return ErrorLn("Error reading log: ", err)
 		}
 		if index >= len(report) {
+			reportLock.Lock()
 			report = append(report, []string{})
+			reportLock.Unlock()
 		}
 		jobs <- reportLine{line, index}
 		index = index + 1
