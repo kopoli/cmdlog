@@ -19,7 +19,7 @@ const (
 
 var (
 	homeDir           = os.Getenv("HOME")
-	initialReportLen  = 16864
+	initialReportLen  = 128
 	maximumLineLength = 256 * 1024
 	timeFormat        = "2006-01-02T15:04:05"
 )
