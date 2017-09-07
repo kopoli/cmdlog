@@ -1,7 +1,6 @@
 package cmdlib
 
 import (
-	"bufio"
 	"io"
 	"os"
 	"path/filepath"
@@ -18,10 +17,9 @@ const (
 )
 
 var (
-	homeDir           = os.Getenv("HOME")
-	initialReportLen  = 1024 * 128
-	maximumLineLength = 256 * 1024
-	timeFormat        = "2006-01-02T15:04:05"
+	homeDir          = os.Getenv("HOME")
+	initialReportLen = 1024 * 128
+	timeFormat       = "2006-01-02T15:04:05"
 )
 
 var magnitudes = []struct {
@@ -160,8 +158,7 @@ type ParseArgs struct {
 
 // ParseCmdLog Parses and prints out the command log from given
 // reader. Possibly filter by session.
-func ParseCmdLog(input io.Reader, arg ParseArgs) (err error) {
-	reader := bufio.NewReaderSize(input, maximumLineLength)
+func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 
 	var re *regexp.Regexp = nil
 	if arg.Grep != "" {
@@ -212,7 +209,7 @@ func ParseCmdLog(input io.Reader, arg ParseArgs) (err error) {
 	}
 
 	for {
-		line, err := reader.ReadString('\n')
+		line, err := reader.ReadLine()
 
 		if err == io.EOF {
 			break

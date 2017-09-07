@@ -102,7 +102,7 @@ func mainReport(c *cli.Context) {
 		Reverse: c.Bool("reverse"),
 		Output:  os.Stdout,
 	}
-	err := cmdlib.ParseCmdLog(fp, arg)
+	err := cmdlib.ParseCmdLog(cmdlib.NewFileReader(fp), arg)
 	if err != nil {
 		cmdlib.FatalErr(err, "Reporting failed")
 	}
