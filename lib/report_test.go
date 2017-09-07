@@ -10,6 +10,14 @@ import (
 	"github.com/pmezard/go-difflib/difflib"
 )
 
+type testLineReader struct {
+	buf *bytes.Buffer
+}
+
+func (l *testLineReader) ReadLine() (string, error) {
+	return l.buf.ReadString('\n')
+}
+
 func structEquals(a, b interface{}) bool {
 	return spew.Sdump(a) == spew.Sdump(b)
 }
@@ -45,7 +53,7 @@ func TestParseCmdLog(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			input := bytes.NewBufferString(tt.input)
+			input := &testLineReader{buf: bytes.NewBufferString(tt.input)}
 			buf := &bytes.Buffer{}
 			tt.arg.Output = buf
 			if err := ParseCmdLog(input, tt.arg); (err != nil) != tt.wantErr {
@@ -71,25 +79,25 @@ var testData string = `
 `
 
 func BenchmarkParseCmdLog_Regexp(b *testing.B) {
-	buf := bytes.NewBufferString(testData)
+	input := &testLineReader{buf: bytes.NewBufferString(testData)}
 	pa := ParseArgs{
 		Output: ioutil.Discard,
 		Grep:   "dpkg",
 	}
 
 	for i := 0; i < b.N; i++ {
-		ParseCmdLog(buf, pa)
+		ParseCmdLog(input, pa)
 	}
 }
 
 func BenchmarkParseCmdLog_Whole(b *testing.B) {
-	buf := bytes.NewBufferString(testData)
+	input := &testLineReader{buf: bytes.NewBufferString(testData)}
 	pa := ParseArgs{
 		Output: ioutil.Discard,
 	}
 
 	for i := 0; i < b.N; i++ {
-		ParseCmdLog(buf, pa)
+		ParseCmdLog(input, pa)
 	}
 }
 

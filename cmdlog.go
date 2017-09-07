@@ -94,15 +94,27 @@ func mainReport(c *cli.Context) {
 		}
 		defer fp.Close()
 	}
+	var lr cmdlib.LineReader
+	if c.Bool("reverse") {
+		var err error
+		lr, err = cmdlib.NewReverseReader(fp)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		lr = cmdlib.NewFileReader(fp)
+	}
+
 	arg := cmdlib.ParseArgs{
 		Session: c.String("session"),
 		Since:   c.String("since"),
 		Grep:    c.String("grep"),
 		Pwd:     c.Bool("pwd"),
-		Reverse: c.Bool("reverse"),
-		Output:  os.Stdout,
+		Reverse: false,
+		// Reverse: c.Bool("reverse"),
+		Output: os.Stdout,
 	}
-	err := cmdlib.ParseCmdLog(cmdlib.NewFileReader(fp), arg)
+	err := cmdlib.ParseCmdLog(lr, arg)
 	if err != nil {
 		cmdlib.FatalErr(err, "Reporting failed")
 	}
