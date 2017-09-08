@@ -15,8 +15,6 @@ type ReverseReader struct {
 
 	// Position in the buffer
 	bufpos int
-
-	len int64
 }
 
 func NewReverseReader(f io.ReadSeeker) (ret *ReverseReader, err error) {
@@ -27,14 +25,10 @@ func NewReverseReader(f io.ReadSeeker) (ret *ReverseReader, err error) {
 		bufpos: 0,
 	}
 
-	ret.len, err = ret.fp.Seek(0, io.SeekEnd)
+	ret.pos, err = ret.fp.Seek(0, io.SeekEnd)
 	if err != nil {
 		return
 	}
-	ret.pos = ret.len
-	// ret.bufpos = len(ret.buf)-1
-
-	// fmt.Println("Input lenght", ret.pos)
 	return
 }
 
@@ -52,15 +46,10 @@ func (r *ReverseReader) fillBuffer() (err error) {
 
 	readlen := len(r.buf) - r.bufpos
 
-	// fmt.Println("buflen", len(r.buf), "bufpos", r.bufpos, "readlen", readlen)
-
 	// If less than buffer length of data is left in the file
 	if r.pos < int64(readlen) {
 		readlen = int(r.pos)
-		// fmt.Println("LESS DATA IN BUFFER THAN ITS LENGTH!")
 	}
-
-	// fmt.Println("Readlen", readlen)
 
 	// If would need to read more bytes than there is space in the
 	// buffer
@@ -69,24 +58,17 @@ func (r *ReverseReader) fillBuffer() (err error) {
 			maximumLineLength, "bytes"))
 	}
 
-	// fmt.Println("ZAZAA buflen", len(r.buf), "bufpos", r.bufpos, "readlen", readlen)
 
 	// If there is data still left in the buffer
 	if r.bufpos > 0 {
-		// fmt.Println("MOVING BUFFER")
-		// fmt.Println("Buffer Before", string(r.buf))
 		copy(r.buf[readlen:], r.buf[:r.bufpos])
-		// fmt.Println("Buffer after", string(r.buf))
 	}
 
 	// Set the read position to the new place
-	// fmt.Println("Buffer position", r.pos, "Would move it by offset",
-	// 	int64(-readlen))
 	r.pos, err = r.fp.Seek(r.pos - int64(readlen), io.SeekStart)
 	if err != nil {
 		return
 	}
-	// fmt.Println("Buffer position",r.pos)
 
 	// Read data to the front part of the buffer
 	var n int
@@ -122,15 +104,11 @@ func (r *ReverseReader) ReadLine() (line string, err error) {
 			idx = 0
 		}
 	}
-	// fmt.Println("Found newline at", idx, "buffer len", r.bufpos, "input pos",
-	// 	r.pos)
 	if idx > 0 || (idx == 0 && r.buf[idx] == '\n') {
 		idx += 1
 	}
 
-	// fmt.Printf("luetaan slice: %d:%d\n", idx, r.bufpos)
 	line = string(r.buf[idx:r.bufpos]) + "\n"
-	// fmt.Printf("string is: %v\n", line)
 	r.bufpos = idx
 	if idx > 0 || (idx == 0 && r.buf[idx] == '\n') {
 		r.bufpos -= 1
@@ -138,44 +116,3 @@ func (r *ReverseReader) ReadLine() (line string, err error) {
 
 	return
 }
-
-// func (r *Reverser) Read(p []byte) (n int, err error) {
-// 	readlen := int64(len(p))
-// 	tgt := &p
-// 	smaller := false
-
-// 	if r.pos-readlen < 0 {
-// 		readlen = r.pos
-// 		tmp := make([]byte, readlen)
-// 		tgt = &tmp
-// 		smaller = true
-// 	}
-
-// 	if readlen == 0 {
-// 		return
-// 	}
-
-// 	r.pos, err = r.fp.Seek(-readlen, io.SeekCurrent)
-// 	if err != nil {
-// 		// TODO debug
-// 		panic("Reverse reader failed!")
-// 	}
-
-// 	n, err = r.fp.Read(*tgt)
-// 	if err != nil {
-// 		return
-// 	}
-
-// 	if n != int(readlen) {
-// 		panic(fmt.Sprint("Readlen differs:", readlen, "!=", n))
-// 	}
-
-// 	if smaller {
-// 		copy(p, *tgt)
-// 	}
-// 	return
-// }
-
-// func (r *Reverser) Close() error {
-// 	return r.fp.Close()
-// }

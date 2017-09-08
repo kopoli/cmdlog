@@ -24,11 +24,11 @@ func TestReverseReader(t *testing.T) {
 		wantErr bool
 	}{
 		{"Empty data", "", []string{}, false},
-		{"Single row", "a", []string{"a"}, false},
-		{"Two rows", "a\nb", []string{"b", "a"}, false},
-		{"Empty line at end", "a\n", []string{"", "a"}, false},
+		{"Single row", "a", []string{"a\n"}, false},
+		{"Two rows", "a\nb", []string{"b\n", "a\n"}, false},
+		{"Empty line at end", "a\n", []string{"\n", "a\n"}, false},
 		{"Longer lines", "something\nother\nthan\nthis",
-			[]string{"this", "than", "other", "something"}, false},
+			[]string{"this\n", "than\n", "other\n", "something\n"}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
