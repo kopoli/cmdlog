@@ -14,6 +14,9 @@ func TestReverseReader(t *testing.T) {
 		bufpos int
 		len    int64
 	}
+
+	maximumLineLength = 10
+
 	tests := []struct {
 		name    string
 		data    string
@@ -22,8 +25,10 @@ func TestReverseReader(t *testing.T) {
 	}{
 		{"Empty data", "", []string{}, false},
 		{"Single row", "a", []string{"a"}, false},
-		{"Two rows", "a\nb", []string{"b","a"}, false},
-		{"Empty line at end", "a\n", []string{"","a"}, false},
+		{"Two rows", "a\nb", []string{"b", "a"}, false},
+		{"Empty line at end", "a\n", []string{"", "a"}, false},
+		{"Longer lines", "something\nother\nthan\nthis",
+			[]string{"this", "than", "other", "something"}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -35,7 +40,7 @@ func TestReverseReader(t *testing.T) {
 				return
 			}
 			lines := []string{}
-			for {
+			for i := 0; i < len(tt.lines)+1; i++ {
 				line, err := r.ReadLine()
 				if err == io.EOF {
 					break
@@ -47,8 +52,15 @@ func TestReverseReader(t *testing.T) {
 				lines = append(lines, line)
 			}
 
+			_, err = r.ReadLine()
+			if err != io.EOF {
+				t.Errorf("Expected EOF when ReadLine called %d'th time",
+					len(tt.lines)+2)
+			}
+
 			if len(tt.lines) != len(lines) {
-				t.Errorf("Expected %d lines, got %d lines", len(tt.lines), len(lines))
+				t.Errorf("Expected %d lines, got %d lines, Contents:\n%s",
+					len(tt.lines), len(lines), diffStr(tt.lines,lines))
 				return
 
 			}
@@ -59,5 +71,27 @@ func TestReverseReader(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func BenchmarkReverseReader(b *testing.B) {
+	var r *ReverseReader
+	var err error
+
+	maximumLineLength = 1024
+
+	r, err = NewReverseReader(bytes.NewReader([]byte(testData)))
+	if err != nil {
+		b.Errorf("Creating a reverse reader from testData failed:",err)
+		return
+	}
+
+	for i := 0; i < b.N; i++ {
+		for {
+			_, err = r.ReadLine()
+			if err == io.EOF {
+				break
+			}
+		}
 	}
 }
