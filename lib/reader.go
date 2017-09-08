@@ -2,10 +2,10 @@ package cmdlib
 
 import (
 	"bufio"
-	"os"
+	"io"
 )
 
-const (
+var (
 	maximumLineLength = 256 * 1024
 )
 
@@ -13,14 +13,14 @@ type LineReader interface {
 	ReadLine() (string, error)
 }
 
-type FileReader struct {
+type BufferedReader struct {
 	reader *bufio.Reader
 }
 
-func NewFileReader(f *os.File) (ret *FileReader) {
-	return &FileReader{reader: bufio.NewReaderSize(f, maximumLineLength)}
+func NewBufferedReader(f io.Reader) (ret *BufferedReader) {
+	return &BufferedReader{reader: bufio.NewReaderSize(f, maximumLineLength)}
 }
 
-func (f *FileReader) ReadLine() (string, error) {
+func (f *BufferedReader) ReadLine() (string, error) {
 	return f.reader.ReadString('\n')
 }

@@ -102,7 +102,7 @@ func mainReport(c *cli.Context) {
 			log.Fatal(err)
 		}
 	} else {
-		lr = cmdlib.NewFileReader(fp)
+		lr = cmdlib.NewBufferedReader(fp)
 	}
 
 	arg := cmdlib.ParseArgs{
