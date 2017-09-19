@@ -1,11 +1,13 @@
 package cmdlib
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -190,60 +192,32 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 		line  string
 		index int
 	}
-	jobs := make(chan reportLine, 10)
+	jobs := make(chan reportLine)
+	completions := make(chan int)
 
 	wg := sync.WaitGroup{}
-	worker := func(jobs <-chan reportLine) {
+
+	// Parses the report line strings to the report array
+	worker := func(jobs <-chan reportLine, completions chan<- int) {
 		for rl := range jobs {
 			reportLock.RLock()
 			report[rl.index] = make([]string, 4)
 			ParseCmdLogLineNoAlloc(string(rl.line), arg.Session,
 				since, re, &report[rl.index])
 			reportLock.RUnlock()
+			completions <- rl.index
 		}
 		wg.Done()
 	}
+
 	for i := 0; i < runtime.NumCPU()*2; i++ {
 		wg.Add(1)
-		go worker(jobs)
+		go worker(jobs, completions)
 	}
 
-	for {
-		line, err := reader.ReadLine()
-
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return ErrorLn("Error reading log: ", err)
-		}
-		if index >= len(report) {
-			reportLock.Lock()
-			report = append(report, []string{})
-			reportLock.Unlock()
-		}
-		jobs <- reportLine{line, index}
-		index = index + 1
-	}
-	close(jobs)
-	wg.Wait()
-
-	if arg.Pwd {
-		AddPwdsToReport(&report)
-	}
-
-	// Print out the report
-	reportlen := len(report) - 1
-	for idx := range report {
-		pos := idx
-		if arg.Reverse {
-			pos = reportlen - idx
-		}
-		if report[pos] != nil && len(report[pos]) != 4 {
-			debugTrace("report line is not nil, but len", len(report[pos]),
-				"!= 4 pos", pos, "reportlen", reportlen)
-		}
-
+	// Print a single report line
+	printLine := func(pos int) {
+		reportLock.RLock()
 		if len(report[pos]) == 4 && report[pos][0] != "" {
 			line := ""
 			if arg.Session == "" {
@@ -256,7 +230,94 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 			line = line + "\t" + report[pos][2]
 			arg.Output.Write([]byte(line))
 		}
+		reportLock.RUnlock()
 	}
+
+	// Print the whole report as it gets parsed
+	printer := func(completions <-chan int) {
+		complete := make([]int, 0, 1024)
+		firstNotPrinted := 0
+
+		for idx := range completions {
+			complete = append(complete, idx)
+			sort.Ints(complete)
+
+			var limit int = firstNotPrinted
+			var next int = len(complete)
+
+			// Get the number of sequential items that can be printed
+			for i := range complete {
+				if limit != complete[i] {
+					next = i
+					break
+				}
+				limit += 1
+			}
+
+			// fmt.Println("limit", limit, "firstnotprinted", firstNotPrinted, "complete", complete)
+
+			if limit != firstNotPrinted {
+				for i := firstNotPrinted; i < limit; i++ {
+					printLine(i)
+				}
+
+				// fmt.Println("clen", len(complete), "next", next, "cap", cap(complete), "limit", limit)
+
+				complete = complete[next:]
+				// fmt.Println("next", next, "new complete",complete )
+				firstNotPrinted = limit
+			}
+
+			// Sanity check
+			if len(complete) > 1024 {
+				panic(fmt.Sprint("SANITY: Completes length is ",len(complete)))
+			}
+		}
+	}
+
+	// If PWD printing is enabled, it needs to be done after parsing
+	if arg.Pwd {
+		// Drain the channel
+		go func(completions <-chan int) {
+			for range completions {
+			}
+		}(completions)
+	} else {
+		go printer(completions)
+	}
+
+	// Read lines from the log
+	for {
+		line, err := reader.ReadLine()
+
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return ErrorLn("Error reading log: ", err)
+		}
+		if index >= cap(report)-1 {
+			reportLock.Lock()
+
+			// Allocate to capacity
+			report = append(report, []string{})
+			report = append(report, make([][]string,cap(report)-len(report))...)
+			reportLock.Unlock()
+		}
+		jobs <- reportLine{line, index}
+		index = index + 1
+	}
+	close(jobs)
+	wg.Wait()
+	close(completions)
+
+	if arg.Pwd {
+		AddPwdsToReport(&report)
+		for idx := range report {
+			printLine(idx)
+		}
+	}
+
 	return nil
 }
 
