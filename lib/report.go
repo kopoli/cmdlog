@@ -254,17 +254,13 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 				limit += 1
 			}
 
-			// fmt.Println("limit", limit, "firstnotprinted", firstNotPrinted, "complete", complete)
-
 			if limit != firstNotPrinted {
 				for i := firstNotPrinted; i < limit; i++ {
 					printLine(i)
 				}
 
-				// fmt.Println("clen", len(complete), "next", next, "cap", cap(complete), "limit", limit)
 
 				complete = complete[next:]
-				// fmt.Println("next", next, "new complete",complete )
 				firstNotPrinted = limit
 			}
 
