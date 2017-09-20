@@ -192,8 +192,8 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 		line  string
 		index int
 	}
-	jobs := make(chan reportLine)
-	completions := make(chan int)
+	jobs := make(chan reportLine, runtime.NumCPU())
+	completions := make(chan int, runtime.NumCPU())
 
 	wg := sync.WaitGroup{}
 
