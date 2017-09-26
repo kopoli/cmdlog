@@ -109,11 +109,6 @@ func ParseCmdLogLineNoAlloc(line string, session string, since int64, regex *reg
 	var pos [2]int
 	start := 0
 	for i := range pos {
-		// if start >= len(line) {
-		// 	panic(fmt.Sprint("report line is of invalid format: length: ",
-		// 		len(line), " Contents:", line))
-		// 	// return
-		// }
 		relpos := strings.Index(line[start:], "\t")
 
 		// The format of the line is improper
