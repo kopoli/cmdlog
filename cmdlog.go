@@ -20,6 +20,7 @@ var (
 	cmdlogFile = os.ExpandEnv("${HOME}/.cmdlog")
 	version    = "Undefined"
 	timestamp  = "Undefined"
+	exitValue int = 0
 )
 
 func checkErr(err error, message string, arg ...string) {
@@ -29,8 +30,8 @@ func checkErr(err error, message string, arg ...string) {
 	fmt.Fprintf(os.Stderr, "Error: %s%s. (error: %s)\n", message,
 		strings.Join(arg, " "), err)
 
-	// Exit and run all deferrals
-	defer os.Exit(1)
+	// Exit goroutine and run all deferrals
+	exitValue = 1
 	runtime.Goexit()
 }
 
@@ -77,6 +78,11 @@ func main() {
 	opts.Set("program-version", version)
 	opts.Set("program-timestamp", timestamp)
 	opts.Set("cmdlog-file", cmdlogFile)
+
+	// In the last deferred function, exit the program with given code
+	defer func() {
+		os.Exit(exitValue)
+	}()
 
 	_, err := cmdlib.Cli(opts, os.Args)
 	checkErr(err, "Parsing command line failed")
