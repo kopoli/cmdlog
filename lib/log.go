@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"regexp"
-	"strings"
 	"time"
 )
 
@@ -16,21 +15,20 @@ var (
 )
 
 // AppendLine creates a log line to the given logfile
-func AppendLine(logfile io.Writer, session string, args []string) {
-	cmd := strings.Join(args, " ")
+func AppendLine(logfile io.Writer, session string, args string) error {
 
 	// change to single line command
 	re := regexp.MustCompile("[\r\n]+")
-	cmd = re.ReplaceAllString(cmd, " ")
+	args = re.ReplaceAllString(args, " ")
 
 	// Filter out unlogged commands
 	for _, filter := range filters {
 		re := regexp.MustCompile(filter)
-		if re.MatchString(cmd) {
-			return
+		if re.MatchString(args) {
+			return nil
 		}
 	}
 
-	fmt.Fprintf(logfile, "%d\t%s\t%s\n", time.Now().Unix(), session, cmd)
-	return
+	_, err := fmt.Fprintf(logfile, "%d\t%s\t%s\n", time.Now().Unix(), session, args)
+	return err
 }
