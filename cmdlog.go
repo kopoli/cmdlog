@@ -1,15 +1,15 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"os"
 	"runtime"
 	"runtime/pprof"
 	"strings"
 
 	cmdlib "./lib"
-	"github.com/codegangsta/cli"
+	"github.com/kopoli/go-util"
 )
 
 // MajorVersion is the hard coded major version as opposed to the version
@@ -22,6 +22,18 @@ var (
 	timestamp  = "Undefined"
 )
 
+func checkErr(err error, message string, arg ...string) {
+	if err == nil {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "Error: %s%s. (error: %s)\n", message,
+		strings.Join(arg, " "), err)
+
+	// Exit and run all deferrals
+	defer os.Exit(1)
+	runtime.Goexit()
+}
+
 type profiler struct {
 	cpuproffile string
 	memproffile string
@@ -29,13 +41,13 @@ type profiler struct {
 
 func createProfileFile(outfile string) *os.File {
 	fp, err := os.Create(outfile)
-	if err != nil {
-		cmdlib.FatalErr(err, "Could not create profile file", outfile)
-	}
+	checkErr(err, "Could not create profile file", outfile)
 	return fp
 }
 
-func createProfiler(cpuproffile, memproffile string) profiler {
+func setupProfiler(opts util.Options) profiler {
+	cpuproffile := opts.Get("profile-cpu-file", "")
+	memproffile := opts.Get("profile-mem-file", "")
 	ret := profiler{
 		cpuproffile: cpuproffile,
 		memproffile: memproffile,
@@ -60,144 +72,60 @@ func (p *profiler) deleteProfiler() {
 	}
 }
 
-func mainLog(c *cli.Context) {
-	args := c.Args()
-	if len(args) < 2 {
-		cmdlib.FatalErr(nil, "Source and argument are required.")
-	}
-
-	logfile := c.GlobalString("file")
-	fp, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
-	if err != nil {
-		cmdlib.FatalErr(err, "Could not open file \"", logfile, "\" for writing",
-			logfile)
-	}
-	cmdlib.AppendLine(fp, args[0], args[1:])
-	fp.Close()
-}
-
-func mainReport(c *cli.Context) {
-	proffile := c.GlobalString("profile")
-	var prof profiler
-	if proffile != "" {
-		prof = createProfiler(c.GlobalString("profile"), c.GlobalString("memprofile"))
-		defer prof.deleteProfiler()
-	}
-
-	fp := os.Stdin
-	name := c.GlobalString("file")
-	if strings.Compare(name, "-") != 0 {
-		var err error
-		fp, err = os.Open(name)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer fp.Close()
-	}
-	var lr cmdlib.LineReader
-	if c.Bool("reverse") {
-		var err error
-		lr, err = cmdlib.NewReverseReader(fp)
-		if err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		lr = cmdlib.NewBufferedReader(fp)
-	}
-
-	arg := cmdlib.ParseArgs{
-		Session: c.String("session"),
-		Since:   c.String("since"),
-		Grep:    c.String("grep"),
-		Pwd:     c.Bool("pwd"),
-		Reverse: false,
-		// Reverse: c.Bool("reverse"),
-		Output: os.Stdout,
-	}
-	err := cmdlib.ParseCmdLog(lr, arg)
-	if err != nil {
-		cmdlib.FatalErr(err, "Reporting failed")
-	}
-}
-
 func main() {
-	app := cli.NewApp()
-	app.Name = os.Args[0]
-	app.Usage = "Command logging"
-	app.Version = fmt.Sprintf("%s-%s", MajorVersion, version)
-	app.Copyright = "MIT"
-	app.Authors = []cli.Author{
-		{
-			Name:  "Kalle Kankare",
-			Email: "kalle.kankare@iki.fi",
-		},
-	}
-	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:   "file, f",
-			Value:  cmdlogFile,
-			Usage:  "Read commands from FILE",
-			EnvVar: "CMDLOG_FILE",
-		},
-		cli.StringFlag{
-			Name:   "profile",
-			Usage:  "Create a CPU profile of the runtime",
-			EnvVar: "CMDLOG_PROFILE",
-		},
-		cli.StringFlag{
-			Name:   "memprofile",
-			Usage:  "Create a memory profile of the runtime",
-			EnvVar: "CMDLOG_MEMPROFILE",
-		},
-	}
+	opts := util.NewOptions()
+	opts.Set("program-version", version)
+	opts.Set("program-timestamp", timestamp)
+	opts.Set("cmdlog-file", cmdlogFile)
 
-	app.Commands = []cli.Command{
-		{
-			Name:   "log",
-			Usage:  "Log a new item. \n\n   Arguments: <source> <command> [args ...]",
-			Action: mainLog,
-		},
-		{
-			Name:   "report",
-			Usage:  "Generate report from the command log",
-			Action: mainReport,
-			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:   "pwd",
-					Usage:  "Print also the current directory where the command was run.",
-					EnvVar: "CMDLOG_PWD",
-				},
-				cli.StringFlag{
-					Name:   "session",
-					Usage:  "Report lists commands of the given SESSION.",
-					EnvVar: "CMDLOG_SESSION",
-				},
-				cli.StringFlag{
-					Name:   "since, d",
-					Usage:  "Display command starting from SINCE.",
-					EnvVar: "CMDLOG_SINCE",
-				},
-				cli.BoolFlag{
-					Name:   "reverse, r",
-					Usage:  "Display command in reverse",
-					EnvVar: "CMDLOG_REVERSE",
-				},
-				cli.StringFlag{
-					Name:   "grep",
-					Usage:  "Grep for a command",
-					EnvVar: "CMDLOG_GREP",
-				},
-			},
-		},
-	}
+	_, err := cmdlib.Cli(opts, os.Args)
+	checkErr(err, "Parsing command line failed")
 
-	cli.VersionPrinter = func(c *cli.Context) {
-		fmt.Fprintf(c.App.Writer, "%s %v\nbuilt %v with Go %v\n",
-			app.Name, app.Version, timestamp, runtime.Version())
-	}
+	op := opts.Get("operation", "")
+	cmdlogFile = opts.Get("cmdlog-file", "jeje")
 
-	err := app.Run(os.Args)
-	if err != nil {
-		cmdlib.FatalErr(err, "Running the application failed")
+	p := setupProfiler(opts)
+	defer p.deleteProfiler()
+
+	switch op {
+	case "log":
+		fp, err := os.OpenFile(cmdlogFile,
+			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+		checkErr(err, "Could not open file \"",
+			cmdlogFile, "\" for writing", cmdlogFile)
+		defer fp.Close()
+
+		source := opts.Get("log-source", "<unknown>")
+		args := opts.Get("log-args", "<unknown>")
+
+		err = cmdlib.AppendLine(fp, source, args)
+		checkErr(err, "Could not print to log")
+	case "report":
+		arg := cmdlib.ParseArgs{
+			Session: opts.Get("report-session", ""),
+			Since:   opts.Get("report-since", ""),
+			Grep:    opts.Get("report-grep", ""),
+			Pwd:     opts.IsSet("report-pwd"),
+			Output:  os.Stdout,
+		}
+		fp := os.Stdin
+		if strings.Compare(cmdlogFile, "-") != 0 {
+			fp, err = os.Open(cmdlogFile)
+			checkErr(err, "Could not open", cmdlogFile, "for reading.")
+			defer fp.Close()
+		}
+		var lr cmdlib.LineReader
+		if opts.IsSet("report-reverse") {
+			lr, err = cmdlib.NewReverseReader(fp)
+			checkErr(err, "Creating a new reverse reader failed")
+		} else {
+			lr = cmdlib.NewBufferedReader(fp)
+		}
+
+		err = cmdlib.ParseCmdLog(lr, arg)
+		checkErr(err, "Parsing the command log failed")
+	default:
+		err = errors.New(fmt.Sprintf("Invalid command: %s", op))
+		checkErr(err, "Running cmdlog failed")
 	}
 }
