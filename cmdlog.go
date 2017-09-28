@@ -17,10 +17,10 @@ import (
 var MajorVersion = "1"
 
 var (
-	cmdlogFile = os.ExpandEnv("${HOME}/.cmdlog")
-	version    = "Undefined"
-	timestamp  = "Undefined"
-	exitValue int = 0
+	cmdlogFile     = os.ExpandEnv("${HOME}/.cmdlog")
+	version        = "Undefined"
+	timestamp      = "Undefined"
+	exitValue  int = 0
 )
 
 func checkErr(err error, message string, arg ...string) {
