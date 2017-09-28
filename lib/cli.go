@@ -1,8 +1,6 @@
 package cmdlib
 
 import (
-	"fmt"
-	"runtime"
 	"strings"
 
 	cli "github.com/jawher/mow.cli"
@@ -12,14 +10,10 @@ import (
 
 func Cli(opts util.Options, argsin []string) (args []string, err error) {
 	progName := opts.Get("program-name", "cmdlog")
-	progVersion := opts.Get("program-version", "undefined")
-	progTimestamp := opts.Get("program-timestamp", "undefined")
 
 	app := cli.App(progName, "Command logging and reporting")
 
-	app.Version("version v", fmt.Sprintf("%s: %s\nBuilt %v with: %s/%s for %s/%s",
-		progName, progVersion, progTimestamp, runtime.Compiler,
-		runtime.Version(), runtime.GOOS, runtime.GOARCH))
+	app.Version("version v", util.VersionString(opts))
 
 	app.Command("log", "Log a new command line", func(cmd *cli.Cmd) {
 		cmd.Spec = "[OPTIONS] SOURCE COMMAND [ARGS...]"
