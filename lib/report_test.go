@@ -159,3 +159,27 @@ func TestParseCmdLogLineNoAlloc(t *testing.T) {
 		}
 	}
 }
+
+func Test_determineDirectory(t *testing.T) {
+	tests := []struct {
+		name     string
+		previous string
+		cmd      string
+		want     string
+	}{
+		{"Home", "/something", "cd", homeDir},
+		{"Go to subdir", "/something", "cd jeejee", "/something/jeejee"},
+		{"Go to absdir", "/something", "cd /abs", "/abs"},
+		{"Go up", "/something", "s", "/"},
+		{"Go up 2", "/something", "cd ..", "/"},
+		{"Start session", "/", "Started shell session: /here", "/here"},
+		{"Normal command", "/something", "ls", "/something"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := determineDirectory(tt.previous, tt.cmd); got != tt.want {
+				t.Errorf("determineDirectory() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
