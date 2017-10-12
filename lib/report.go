@@ -330,11 +330,11 @@ func determineDirectory(previous string, cmd string) string {
 		ret = parts[3]
 	}
 
-	if filepath.IsAbs(ret) {
-		return ret
+	if !filepath.IsAbs(ret) {
+		ret = filepath.Join(previous, ret)
 	}
 
-	return filepath.Clean(filepath.Join(previous, ret))
+	return strings.TrimSpace(ret)
 }
 
 // AddPwdsToReport Add working directories to the report
