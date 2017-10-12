@@ -254,14 +254,13 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 					printLine(i)
 				}
 
-
 				complete = complete[next:]
 				firstNotPrinted = limit
 			}
 
 			// Sanity check
 			if len(complete) > 1024 {
-				panic(fmt.Sprint("SANITY: Completes length is ",len(complete)))
+				panic(fmt.Sprint("SANITY: Completes length is ", len(complete)))
 			}
 		}
 	}
@@ -292,7 +291,7 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 
 			// Allocate to capacity
 			report = append(report, []string{})
-			report = append(report, make([][]string,cap(report)-len(report))...)
+			report = append(report, make([][]string, cap(report)-len(report))...)
 			reportLock.Unlock()
 		}
 		jobs <- reportLine{line, index}
