@@ -333,7 +333,7 @@ func determineDirectory(previous string, cmd string) string {
 		ret = filepath.Join(previous, ret)
 	}
 
-	return strings.TrimSpace(ret)
+	return strings.TrimSpace(filepath.Clean(ret))
 }
 
 // AddPwdsToReport Add working directories to the report
