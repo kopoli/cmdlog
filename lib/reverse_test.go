@@ -36,7 +36,7 @@ func TestReverseReader(t *testing.T) {
 			var err error
 			r, err = NewReverseReader(bytes.NewReader([]byte(tt.data)))
 			if err != nil {
-				t.Errorf("Creating new reader failed:", err)
+				t.Errorf("Creating new reader failed: %v", err)
 				return
 			}
 			lines := []string{}
@@ -82,7 +82,7 @@ func BenchmarkReverseReader(b *testing.B) {
 
 	r, err = NewReverseReader(bytes.NewReader([]byte(testData)))
 	if err != nil {
-		b.Errorf("Creating a reverse reader from testData failed:",err)
+		b.Errorf("Creating a reverse reader from testData failed: %v",err)
 		return
 	}
 
