@@ -28,10 +28,10 @@ var magnitudes = []struct {
 	mag  time.Duration
 	name string
 }{
-	{day, "day"},
-	{time.Hour, "hour"},
-	{time.Minute, "minute"},
-	{time.Second, "second"},
+	{day, "d"},
+	{time.Hour, "h"},
+	{time.Minute, "m"},
+	{time.Second, "s"},
 }
 
 // FormatRelativeTime converts a duration to a string according to magnitudes above
@@ -46,12 +46,7 @@ func FormatRelativeTime(diff time.Duration) string {
 		count := diff / mag.mag
 		diff = diff % mag.mag
 		if count > 0 {
-			ret = ret + strconv.FormatInt(int64(count), 10) + " " +
-				mag.name
-			if count > 1 {
-				ret = ret + "s"
-			}
-			ret = ret + " "
+			ret = ret + strconv.FormatInt(int64(count), 10) + mag.name + " "
 		}
 	}
 
