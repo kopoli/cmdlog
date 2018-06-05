@@ -158,7 +158,7 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 		arg.Grep = re.ReplaceAllString(arg.Grep, ".*")
 		re, err = regexp.Compile(arg.Grep)
 		if err != nil {
-			return ErrorLn("Failed to compile regexp \"", arg.Grep, "\": ", err)
+			return fmt.Errorf("Failed to compile regexp \"%s\": %s", arg.Grep, err)
 		}
 	}
 
@@ -166,7 +166,7 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 	if arg.Since != "" {
 		sincetm, err := time.ParseInLocation(timeFormat, arg.Since, time.Local)
 		if err != nil {
-			return ErrorLn("Parsing given since failed:", err)
+			return fmt.Errorf("Parsing given since failed: %s", err)
 		}
 		since = sincetm.Unix()
 	}
@@ -279,7 +279,7 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 			break
 		}
 		if err != nil {
-			return ErrorLn("Error reading log: ", err)
+			return fmt.Errorf("Error reading log: %s", err)
 		}
 		if index >= cap(report)-1 {
 			reportLock.Lock()
