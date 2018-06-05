@@ -171,6 +171,8 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 		since = sincetm.Unix()
 	}
 
+	out := NewBufferedWriter(arg.Output, 24)
+
 	// The format for the report structure:
 	// for each element: timestring, session, command, [cwd]
 	// If the strings in the element are empty, it has been filtered out
@@ -218,7 +220,7 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 				line = line + "\t" + report[pos][3]
 			}
 			line = line + "\t" + report[pos][2]
-			arg.Output.Write([]byte(line))
+			out.Write([]byte(line))
 		}
 		reportLock.RUnlock()
 	}
@@ -302,6 +304,8 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 			printLine(idx)
 		}
 	}
+
+	out.Close()
 
 	return nil
 }
