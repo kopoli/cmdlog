@@ -75,6 +75,7 @@ func (p *profiler) deleteProfiler() {
 
 func main() {
 	opts := util.NewOptions()
+	opts.Set("program-name", "cmdlog")
 	opts.Set("program-version", version)
 	opts.Set("program-timestamp", timestamp)
 	opts.Set("cmdlog-file", cmdlogFile)
