@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -20,6 +21,9 @@ func AppendLine(logfile io.Writer, session string, args string) error {
 	// change to single line command
 	re := regexp.MustCompile("[\r\n]+")
 	args = re.ReplaceAllString(args, " ")
+
+	// delete trailing whitespace
+	args = strings.TrimRight(args, " ")
 
 	// Filter out unlogged commands
 	for _, filter := range filters {
