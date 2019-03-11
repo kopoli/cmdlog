@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strings"
 )
 
 type ReverseReader struct {
@@ -58,14 +59,13 @@ func (r *ReverseReader) fillBuffer() (err error) {
 			maximumLineLength, "bytes"))
 	}
 
-
 	// If there is data still left in the buffer
 	if r.bufpos > 0 {
 		copy(r.buf[readlen:], r.buf[:r.bufpos])
 	}
 
 	// Set the read position to the new place
-	r.pos, err = r.fp.Seek(r.pos - int64(readlen), io.SeekStart)
+	r.pos, err = r.fp.Seek(r.pos-int64(readlen), io.SeekStart)
 	if err != nil {
 		return
 	}
@@ -93,7 +93,7 @@ func (r *ReverseReader) ReadLine() (line string, err error) {
 	if idx < 0 {
 		err = r.fillBuffer()
 		if err != nil {
-			return
+			return "", err
 		}
 		idx = bytes.LastIndex(r.buf[:r.bufpos], []byte{'\n'})
 		if idx == -1 {
@@ -108,11 +108,14 @@ func (r *ReverseReader) ReadLine() (line string, err error) {
 		idx += 1
 	}
 
-	line = string(r.buf[idx:r.bufpos]) + "\n"
+	sb := strings.Builder{}
+	sb.Write(r.buf[idx:r.bufpos])
+	sb.WriteByte('\n')
+
 	r.bufpos = idx
 	if idx > 0 || (idx == 0 && r.buf[idx] == '\n') {
 		r.bufpos -= 1
 	}
 
-	return
+	return sb.String(), nil
 }
