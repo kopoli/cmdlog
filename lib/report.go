@@ -211,6 +211,8 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 	printLine := func(pos int) {
 		reportLock.RLock()
 		if len(report[pos]) == 4 && report[pos][0] != "" {
+			// A stringbuilder was tried here, but that allocated
+			// 3MB more memory
 			line := ""
 			if arg.Session == "" {
 				line = report[pos][1] + " "
