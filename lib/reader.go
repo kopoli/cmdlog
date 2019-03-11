@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	maximumLineLength = 256 * 1024
+	maximumLineLength = 64 * 1024
 )
 
 type LineReader interface {
