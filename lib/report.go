@@ -152,11 +152,11 @@ type ParseArgs struct {
 // reader. Possibly filter by session.
 func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 
-	var re *regexp.Regexp = nil
+	var filterRe *regexp.Regexp = nil
 	if arg.Grep != "" {
-		re = regexp.MustCompile(`\s+`)
-		arg.Grep = re.ReplaceAllString(arg.Grep, ".*")
-		re, err = regexp.Compile(arg.Grep)
+		filterRe = regexp.MustCompile(`\s+`)
+		arg.Grep = filterRe.ReplaceAllString(arg.Grep, ".*")
+		filterRe, err = regexp.Compile(arg.Grep)
 		if err != nil {
 			return fmt.Errorf("Failed to compile regexp \"%s\": %s", arg.Grep, err)
 		}
@@ -195,7 +195,7 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 			reportLock.RLock()
 			report[rl.index] = make([]string, 4)
 			ParseCmdLogLineNoAlloc(string(rl.line), arg.Session,
-				since, re, &report[rl.index])
+				since, filterRe, &report[rl.index])
 			reportLock.RUnlock()
 			completions <- rl.index
 		}
