@@ -144,7 +144,6 @@ type ParseArgs struct {
 	Since   string
 	Grep    string
 	Pwd     bool
-	Reverse bool
 	Output  io.Writer
 }
 
