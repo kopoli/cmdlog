@@ -13,7 +13,9 @@ type BufferedWriter struct {
 
 func NewBufferedWriter(o io.Writer, lines int) *BufferedWriter {
 	return &BufferedWriter{
-		buf: bufio.NewWriter(o),
+		buf:     bufio.NewWriter(o),
+		lines:   lines,
+		counter: 0,
 	}
 }
 
