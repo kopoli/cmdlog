@@ -82,7 +82,12 @@ func main() {
 
 	// In the last deferred function, exit the program with given code
 	defer func() {
-		os.Exit(exitValue)
+		// Only exit properly if not panicing
+		if e:= recover(); e != nil {
+			panic(e)
+		} else {
+			os.Exit(exitValue)
+		}
 	}()
 
 	_, err := cmdlib.Cli(opts, os.Args)
