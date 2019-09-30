@@ -175,6 +175,8 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 	// The format for the report structure:
 	// for each element: timestring, session, command, [cwd]
 	// If the strings in the element are empty, it has been filtered out
+	// Tried to make this a [][4]string, but that was half the speed that
+	// this currently is.
 	report := make([][]string, initialReportLen)
 	index := 0
 	reportLock := sync.RWMutex{}
