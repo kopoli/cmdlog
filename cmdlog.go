@@ -90,10 +90,14 @@ func main() {
 		}
 	}()
 
-	_, err := cmdlib.Cli(opts, os.Args)
+	err := cmdlib.Cli(opts, os.Args[1:])
 	checkErr(err, "Parsing command line failed")
 
 	op := opts.Get("operation", "")
+	if op == "" {
+		// No additional operations
+		return
+	}
 	cmdlogFile = opts.Get("cmdlog-file", "jeje")
 
 	p := setupProfiler(opts)
