@@ -8,7 +8,7 @@ import (
 	"runtime/pprof"
 	"strings"
 
-	cmdlib "./lib"
+	cmdlib "github.com/kopoli/cmdlog/lib"
 	"github.com/kopoli/appkit"
 )
 
