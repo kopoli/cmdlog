@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	cmdlib "./lib"
-	"github.com/kopoli/go-util"
+	"github.com/kopoli/appkit"
 )
 
 // MajorVersion is the hard coded major version as opposed to the version
@@ -46,7 +46,7 @@ func createProfileFile(outfile string) *os.File {
 	return fp
 }
 
-func setupProfiler(opts util.Options) profiler {
+func setupProfiler(opts appkit.Options) profiler {
 	cpuproffile := opts.Get("profile-cpu-file", "")
 	memproffile := opts.Get("profile-mem-file", "")
 	ret := profiler{
@@ -74,7 +74,7 @@ func (p *profiler) deleteProfiler() {
 }
 
 func main() {
-	opts := util.NewOptions()
+	opts := appkit.NewOptions()
 	opts.Set("program-name", "cmdlog")
 	opts.Set("program-version", version)
 	opts.Set("program-timestamp", timestamp)
