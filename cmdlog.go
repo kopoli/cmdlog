@@ -12,54 +12,40 @@ import (
 	"github.com/kopoli/appkit"
 )
 
-// MajorVersion is the hard coded major version as opposed to the version
-// provided from command line.
-var MajorVersion = "1"
-
 var (
+	version     = "Undefined"
+	timestamp   = "Undefined"
+	buildGOOS   = "Undefined"
+	buildGOARCH = "Undefined"
+
 	cmdlogFile     = os.ExpandEnv("${HOME}/.cmdlog")
-	version        = "Undefined"
-	timestamp      = "Undefined"
-	exitValue  int = 0
 )
-
-func checkErr(err error, message string, arg ...string) {
-	if err == nil {
-		return
-	}
-	fmt.Fprintf(os.Stderr, "Error: %s%s. (error: %s)\n", message,
-		strings.Join(arg, " "), err)
-
-	// Exit goroutine and run all deferrals
-	exitValue = 1
-	runtime.Goexit()
-}
 
 type profiler struct {
 	cpuproffile string
 	memproffile string
 }
 
-func createProfileFile(outfile string) *os.File {
-	fp, err := os.Create(outfile)
-	checkErr(err, "Could not create profile file", outfile)
-	return fp
-}
-
-func setupProfiler(opts appkit.Options) profiler {
+func setupProfiler(opts appkit.Options) (*profiler, error) {
 	cpuproffile := opts.Get("profile-cpu-file", "")
 	memproffile := opts.Get("profile-mem-file", "")
-	ret := profiler{
+	ret := &profiler{
 		cpuproffile: cpuproffile,
 		memproffile: memproffile,
 	}
 
 	if cpuproffile != "" {
-		fp := createProfileFile(cpuproffile)
+		fp, err := os.Create(cpuproffile)
+		if err != nil {
+			return nil, err
+		}
 		runtime.SetCPUProfileRate(1000)
-		pprof.StartCPUProfile(fp)
+		err = pprof.StartCPUProfile(fp)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return ret
+	return ret, nil
 }
 
 func (p *profiler) deleteProfiler() {
@@ -67,7 +53,11 @@ func (p *profiler) deleteProfiler() {
 		pprof.StopCPUProfile()
 	}
 	if p.memproffile != "" {
-		fp := createProfileFile(p.memproffile)
+		fp, err := os.Create(p.memproffile)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error: Could not create memory profile file:", err)
+			return
+		}
 		defer fp.Close()
 		pprof.WriteHeapProfile(fp)
 	}
@@ -75,10 +65,14 @@ func (p *profiler) deleteProfiler() {
 
 func main() {
 	opts := appkit.NewOptions()
-	opts.Set("program-name", "cmdlog")
+	opts.Set("program-name", os.Args[0])
 	opts.Set("program-version", version)
 	opts.Set("program-timestamp", timestamp)
+	opts.Set("program-buildgoos", buildGOOS)
+	opts.Set("program-buildgoarch", buildGOARCH)
 	opts.Set("cmdlog-file", cmdlogFile)
+
+	exitValue := 0
 
 	// In the last deferred function, exit the program with given code
 	defer func() {
@@ -90,6 +84,18 @@ func main() {
 		}
 	}()
 
+	checkErr := func(err error, message string, arg ...string) {
+		if err == nil {
+			return
+		}
+		fmt.Fprintf(os.Stderr, "Error: %s%s. (error: %s)\n", message,
+			strings.Join(arg, " "), err)
+
+		// Exit goroutine and run all deferrals
+		exitValue = 1
+		runtime.Goexit()
+	}
+
 	err := cmdlib.Cli(opts, os.Args[1:])
 	checkErr(err, "Parsing command line failed")
 
@@ -100,7 +106,8 @@ func main() {
 	}
 	cmdlogFile = opts.Get("cmdlog-file", "jeje")
 
-	p := setupProfiler(opts)
+	p, err := setupProfiler(opts)
+	checkErr(err, "Could not create profile file")
 	defer p.deleteProfiler()
 
 	switch op {
