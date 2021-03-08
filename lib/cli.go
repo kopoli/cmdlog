@@ -11,6 +11,7 @@ import (
 func Cli(opts appkit.Options, argsin []string) error {
 	base := appkit.NewCommand(nil, "", "Command logging and reporting")
 	optVersion := base.Flags.Bool("version", false, "Display version")
+	base.Flags.BoolVar(optVersion, "v", false, "Display version")
 
 	optCmdFile := base.Flags.String("file", opts.Get("cmdlog-file", "cmdlogs.debug"),
 		"File name of the command log")
