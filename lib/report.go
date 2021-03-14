@@ -223,7 +223,7 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 				line = line + "\t" + report[pos][3]
 			}
 			line = line + "\t" + report[pos][2]
-			out.Write([]byte(line))
+			_, _ = out.Write([]byte(line))
 		}
 		reportLock.RUnlock()
 	}

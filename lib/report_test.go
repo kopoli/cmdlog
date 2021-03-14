@@ -49,7 +49,7 @@ func TestParseCmdLog(t *testing.T) {
 		output  string
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -86,7 +86,7 @@ func BenchmarkParseCmdLog_Regexp(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		ParseCmdLog(input, pa)
+		_ = ParseCmdLog(input, pa)
 	}
 }
 
@@ -97,7 +97,7 @@ func BenchmarkParseCmdLog_Whole(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		ParseCmdLog(input, pa)
+		_ = ParseCmdLog(input, pa)
 	}
 }
 

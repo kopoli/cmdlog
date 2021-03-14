@@ -1,15 +1,14 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"runtime"
 	"runtime/pprof"
 	"strings"
 
-	cmdlib "github.com/kopoli/cmdlog/lib"
 	"github.com/kopoli/appkit"
+	cmdlib "github.com/kopoli/cmdlog/lib"
 )
 
 var (
@@ -18,7 +17,7 @@ var (
 	buildGOOS   = "Undefined"
 	buildGOARCH = "Undefined"
 
-	cmdlogFile     = os.ExpandEnv("${HOME}/.cmdlog")
+	cmdlogFile = os.ExpandEnv("${HOME}/.cmdlog")
 )
 
 type profiler struct {
@@ -59,7 +58,11 @@ func (p *profiler) deleteProfiler() {
 			return
 		}
 		defer fp.Close()
-		pprof.WriteHeapProfile(fp)
+		err = pprof.WriteHeapProfile(fp)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error: Could not write memory profile fil:", err)
+			return
+		}
 	}
 }
 
@@ -77,7 +80,7 @@ func main() {
 	// In the last deferred function, exit the program with given code
 	defer func() {
 		// Only exit properly if not panicing
-		if e:= recover(); e != nil {
+		if e := recover(); e != nil {
 			panic(e)
 		} else {
 			os.Exit(exitValue)
@@ -148,7 +151,7 @@ func main() {
 		err = cmdlib.ParseCmdLog(lr, arg)
 		checkErr(err, "Parsing the command log failed")
 	default:
-		err = errors.New(fmt.Sprintf("Invalid command: %s", op))
+		err = fmt.Errorf("Invalid command: %s", op)
 		checkErr(err, "Running cmdlog failed")
 	}
 }

@@ -10,11 +10,11 @@ var (
 	debugLogFile = os.Getenv("CMDLOG_DEBUG_TRACE")
 )
 
-func debugTrace(args ...interface{}) {
+func DebugTrace(args ...interface{}) {
 	if debugLogFile == "" {
 		return
 	}
-	f, err := os.OpenFile(debugLogFile, os.O_APPEND | os.O_WRONLY | os.O_CREATE, 0666)
+	f, err := os.OpenFile(debugLogFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		panic(fmt.Sprint("Debug file opening failed:", err))
 	}

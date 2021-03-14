@@ -13,7 +13,7 @@ func TestAppendLine(t *testing.T) {
 	session := "ses"
 	cmd := "first second"
 
-	AppendLine(&buf, session, cmd)
+	_ = AppendLine(&buf, session, cmd)
 	items := strings.Split(buf.String(), "\t")
 	if len(items) != 3 {
 		t.Error("Erroneous number of arguments (should be", 3,
@@ -44,7 +44,7 @@ func TestAppendLongLine(t *testing.T) {
 	for i := 0; i < count; i++ {
 		cmd = cmd + " " + str
 	}
-	AppendLine(&buf, "Jeps", cmd)
+	_ = AppendLine(&buf, "Jeps", cmd)
 	items := strings.SplitN(buf.String(), "\t", 3)
 	length := count*len(str) + count + 1
 	if len(items[2]) != length {

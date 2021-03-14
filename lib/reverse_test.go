@@ -7,14 +7,6 @@ import (
 )
 
 func TestReverseReader(t *testing.T) {
-	type fields struct {
-		fp     io.ReadSeeker
-		buf    []byte
-		pos    int64
-		bufpos int
-		len    int64
-	}
-
 	maximumLineLength = 10
 
 	tests := []struct {
@@ -60,7 +52,7 @@ func TestReverseReader(t *testing.T) {
 
 			if len(tt.lines) != len(lines) {
 				t.Errorf("Expected %d lines, got %d lines, Contents:\n%s",
-					len(tt.lines), len(lines), diffStr(tt.lines,lines))
+					len(tt.lines), len(lines), diffStr(tt.lines, lines))
 				return
 
 			}
@@ -82,7 +74,7 @@ func BenchmarkReverseReader(b *testing.B) {
 
 	r, err = NewReverseReader(bytes.NewReader([]byte(testData)))
 	if err != nil {
-		b.Errorf("Creating a reverse reader from testData failed: %v",err)
+		b.Errorf("Creating a reverse reader from testData failed: %v", err)
 		return
 	}
 
