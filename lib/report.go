@@ -284,7 +284,7 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("Error reading log: %s", err)
+			return fmt.Errorf("Error reading log: %v", err)
 		}
 		if index >= cap(report)-1 {
 			reportLock.Lock()
