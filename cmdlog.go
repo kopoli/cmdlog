@@ -18,6 +18,7 @@ var (
 	buildGOARCH = "Undefined"
 
 	cmdlogFile = os.ExpandEnv("${HOME}/.cmdlog")
+	cmdlogFilterFile = os.ExpandEnv("${HOME}/.cmdlog-filters")
 )
 
 type profiler struct {
@@ -107,7 +108,8 @@ func main() {
 		// No additional operations
 		return
 	}
-	cmdlogFile = opts.Get("cmdlog-file", "jeje")
+	cmdlogFile = opts.Get("cmdlog-file", cmdlogFile)
+	log := cmdlib.CreateLog(cmdlogFile, cmdlogFilterFile)
 
 	p, err := setupProfiler(opts)
 	checkErr(err, "Could not create profile file")
@@ -115,16 +117,22 @@ func main() {
 
 	switch op {
 	case "log":
-		fp, err := os.OpenFile(cmdlogFile,
-			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
-		checkErr(err, "Could not open file \"",
-			cmdlogFile, "\" for writing", cmdlogFile)
-		defer fp.Close()
+		// Save default filters if the filter file doesn't exist
+		err = log.SaveDefaultFilters()
+		checkErr(err, "Could not write default filters")
+
+		// Load filters
+		err = log.LoadFilters()
+		if err != nil {
+			// Failure of loading filters is not a fatal error
+			fmt.Fprintf(os.Stderr,
+				"Warning: Problems loading filters: %v", err)
+		}
 
 		source := opts.Get("log-source", "<unknown>")
 		args := opts.Get("log-args", "<unknown>")
 
-		err = cmdlib.AppendLine(fp, source, args)
+		err = log.AppendLine(source, args)
 		checkErr(err, "Could not print to log")
 	case "report":
 		arg := cmdlib.ParseArgs{
