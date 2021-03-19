@@ -115,8 +115,7 @@ func main() {
 	checkErr(err, "Could not create profile file")
 	defer p.deleteProfiler()
 
-	switch op {
-	case "log":
+	handleFilters := func() {
 		// Save default filters if the filter file doesn't exist
 		err = log.SaveDefaultFilters()
 		checkErr(err, "Could not write default filters")
@@ -128,12 +127,22 @@ func main() {
 			fmt.Fprintf(os.Stderr,
 				"Warning: Problems loading filters: %v", err)
 		}
+	}
+
+	switch op {
+	case "log":
+		handleFilters()
 
 		source := opts.Get("log-source", "<unknown>")
 		args := opts.Get("log-args", "<unknown>")
 
 		err = log.AppendLine(source, args)
 		checkErr(err, "Could not print to log")
+	case "filters":
+		handleFilters()
+		for i := range log.Filters {
+			fmt.Println(log.Filters[i])
+		}
 	case "report":
 		arg := cmdlib.ParseArgs{
 			Session: opts.Get("report-session", ""),

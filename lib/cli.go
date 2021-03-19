@@ -39,6 +39,8 @@ func Cli(opts appkit.Options, argsin []string) error {
 	optGrep := report.Flags.String("grep", "",
 		"Display commands matching given regular expression")
 
+	_ = appkit.NewCommand(base, "filters", "Print log line filters")
+
 	err := base.Parse(argsin, opts)
 	if err == flag.ErrHelp || *optVersion {
 		if *optVersion {
