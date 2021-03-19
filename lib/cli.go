@@ -9,7 +9,9 @@ import (
 )
 
 func Cli(opts appkit.Options, argsin []string) error {
-	base := appkit.NewCommand(nil, "", "Command logging and reporting")
+	help := fmt.Sprintf("Command logging and reporting."+
+		"\n\nUsage: %s [OPTIONS] <COMMAND>", opts.Get("program-name", "cmdlog"))
+	base := appkit.NewCommand(nil, "", help)
 	optVersion := base.Flags.Bool("version", false, "Display version")
 	base.Flags.BoolVar(optVersion, "v", false, "Display version")
 
@@ -23,8 +25,9 @@ func Cli(opts appkit.Options, argsin []string) error {
 	log.Flags.Usage = func() {
 		out := log.Flags.Output()
 		fmt.Fprintf(out, "Command: log [OPTIONS] SOURCE ARGS[...]\n\n"+
+			"%s\n\nParameters:\n"+
 			"  SOURCE    Command source identifier\n"+
-			"  ARGS      Command line arguments\n")
+			"  ARGS      Command line arguments\n", log.Help)
 	}
 
 	report := appkit.NewCommand(base, "report", "Generate a report from the command log")
