@@ -102,7 +102,7 @@ func (l *Log)LoadFilters() error {
 		return nil
 	}
 
-	emptyLineRe := regexp.MustCompile(`^\s*(#.*)?$`)
+	emptyLineRe := regexp.MustCompile(`^\s*(#.*)?\s*$`)
 
 	fp, err := os.Open(l.FilterFile)
 	if err != nil {
