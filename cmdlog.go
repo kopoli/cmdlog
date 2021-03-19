@@ -103,8 +103,8 @@ func main() {
 	err := cmdlib.Cli(opts, os.Args[1:])
 	checkErr(err, "Parsing command line failed")
 
-	op := opts.Get("operation", "")
-	if op == "" {
+	op := opts.Get("cmdline-command", "")
+	if op == "done" {
 		// No additional operations
 		return
 	}
@@ -159,7 +159,7 @@ func main() {
 		err = cmdlib.ParseCmdLog(lr, arg)
 		checkErr(err, "Parsing the command log failed")
 	default:
-		err = fmt.Errorf("Invalid command: %s", op)
+		err = fmt.Errorf("Invalid command")
 		checkErr(err, "Running cmdlog failed")
 	}
 }

@@ -44,7 +44,7 @@ func Cli(opts appkit.Options, argsin []string) error {
 		if *optVersion {
 			fmt.Println(appkit.VersionString(opts))
 		}
-		opts.Set("operation", "")
+		opts.Set("cmdline-command", "done")
 		return nil
 	}
 
@@ -60,11 +60,9 @@ func Cli(opts appkit.Options, argsin []string) error {
 			return fmt.Errorf("Invalid arguments for log: %s",
 				strings.Join(args, " "))
 		}
-		opts.Set("operation", "log")
 		opts.Set("log-source", args[0])
 		opts.Set("log-args", strings.Join(args[1:], " "))
 	case "report":
-		opts.Set("operation", "report")
 		if *optPwd {
 			opts.Set("report-pwd", "t")
 		}
