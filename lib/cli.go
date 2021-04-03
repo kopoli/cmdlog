@@ -17,6 +17,8 @@ func Cli(opts appkit.Options, argsin []string) error {
 
 	optCmdFile := base.Flags.String("file", opts.Get("cmdlog-file", "cmdlogs.debug"),
 		"File name of the command log")
+	optCmdFilterFile := base.Flags.String("filter", opts.Get("cmdlog-filter-file", "cmdlog-filter.debug"),
+		"File name of the command line filter file")
 	optCpuProfile := base.Flags.String("profile", "", "File name to save CPU profile")
 	optMemProfile := base.Flags.String("memprofile", "", "File name to save memory profile")
 
@@ -54,6 +56,7 @@ func Cli(opts appkit.Options, argsin []string) error {
 	}
 
 	opts.Set("cmdlog-file", *optCmdFile)
+	opts.Set("cmdlog-filter-file", *optCmdFilterFile)
 	opts.Set("profile-cpu-file", *optCpuProfile)
 	opts.Set("profile-mem-file", *optMemProfile)
 

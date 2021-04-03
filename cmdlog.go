@@ -109,6 +109,7 @@ func main() {
 		return
 	}
 	cmdlogFile = opts.Get("cmdlog-file", cmdlogFile)
+	cmdlogFilterFile = opts.Get("cmdlog-filter-file", cmdlogFilterFile)
 	log := cmdlib.CreateLog(cmdlogFile, cmdlogFilterFile)
 
 	p, err := setupProfiler(opts)
