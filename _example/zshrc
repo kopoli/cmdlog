@@ -1,0 +1,69 @@
+# -*- sh -*-
+
+# example zshrc to use cmdlog
+
+# Used programs
+THELM=thelm
+CMDLOG=../cmdlog
+
+FILTERFILE=cmdlog-filters.example.txt
+LOGFILE=cmdlog.example.log
+
+# Requires thelm to be found in path
+if ! type "$THELM" >/dev/null 2>&1; then
+    cat <<EOF
+Error: Example requires thelm to be installed:
+
+https://github.com/kopoli/thelm
+EOF
+    exit 1
+fi
+
+# Some identifier for each session
+_ZSH_SESSION=zsh-$$-$(date +%Y%m%d)
+
+cmd-log() {
+    ${CMDLOG} --file "${LOGFILE}" --filter "${FILTERFILE}" log ${_ZSH_SESSION} "$1"
+}
+
+# Run thelm for displaying the command log report with
+# Meta-, keybinding
+# Uses zle: http://zsh.sourceforge.net/Doc/Release/Zsh-Line-Editor.html
+function cmd-report() {
+    local _cmdlog_output="$(thelm --title cmdlog --hide-initial --single-arg ${CMDLOG} --file ${LOGFILE} report --reverse --grep)"
+    zle reset-prompt
+    # Replace the command line with the final item in the line
+    BUFFER="${_cmdlog_output##*        }"
+    zle end-of-line
+}
+# create a key binding to a new widget
+zle -N cmd-report
+bindkey "^[," cmd-report
+
+# Hook to run before each command:
+# http://zsh.sourceforge.net/Doc/Release/Functions.html#Hook-Functions
+function preexec() {
+    case "$1" in
+        # Don't log commands starting with spaces
+        " "*) ;;
+        # Log everything else
+        *) cmd-log "$1" ;;
+    esac
+}
+
+# Hook to log exiting from the shell
+function zshexit() {
+    cmd-log "Exited shell session"
+}
+
+# Log the starting of the shell
+cmd-log "Started shell session"
+
+cat <<EOF
+Started a zsh shell with cmdlog recording.
+
+The commands are recorded in: $LOGFILE
+The commands are filtered by rows in file: $FILTERFILE
+
+Press Meta-, (ALT+,) to review and filter through the command log.
+EOF
