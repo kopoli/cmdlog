@@ -235,6 +235,8 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 		reportLock.RUnlock()
 	}
 
+	printWg := sync.WaitGroup{}
+
 	// Print the whole report as it gets parsed
 	printer := func(completions <-chan int) {
 		complete := make([]int, 0, arg.Control.CompletionBufferSize)
@@ -270,14 +272,17 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 				panic(fmt.Sprint("SANITY: Completes length is ", len(complete)))
 			}
 		}
+		printWg.Done()
 	}
 
 	// If PWD printing is enabled, it needs to be done after parsing
+	printWg.Add(1)
 	if arg.Pwd {
 		// Drain the channel
 		go func(completions <-chan int) {
 			for range completions {
 			}
+			printWg.Done()
 		}(completions)
 	} else {
 		go printer(completions)
@@ -307,6 +312,7 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 	close(jobs)
 	wg.Wait()
 	close(completions)
+	printWg.Wait()
 
 	if arg.Pwd {
 		AddPwdsToReport(&report)
@@ -315,9 +321,7 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 		}
 	}
 
-	out.Close()
-
-	return nil
+	return out.Close()
 }
 
 // Heuristic to determine the current directory
