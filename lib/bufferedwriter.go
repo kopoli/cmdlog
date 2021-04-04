@@ -5,6 +5,7 @@ import (
 	"io"
 )
 
+// BufferedWriter flushes given data every "lines" number of Write calls.
 type BufferedWriter struct {
 	buf     *bufio.Writer
 	counter int
