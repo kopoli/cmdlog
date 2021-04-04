@@ -112,6 +112,7 @@ type ParseArgs struct {
 	Since   string
 	Grep    string
 	Pwd     bool
+	JobCount int
 	Output  io.Writer
 }
 
@@ -153,8 +154,11 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 		line  string
 		index int
 	}
-	jobs := make(chan reportLine, runtime.NumCPU())
-	completions := make(chan int, runtime.NumCPU())
+	if arg.JobCount == 0 {
+		arg.JobCount = runtime.NumCPU()
+	}
+	jobs := make(chan reportLine, arg.JobCount)
+	completions := make(chan int, arg.JobCount)
 
 	wg := sync.WaitGroup{}
 
@@ -171,7 +175,7 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 		wg.Done()
 	}
 
-	for i := 0; i < runtime.NumCPU()*2; i++ {
+	for i := 0; i < arg.JobCount*2; i++ {
 		wg.Add(1)
 		go worker(jobs, completions)
 	}
