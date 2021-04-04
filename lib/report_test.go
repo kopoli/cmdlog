@@ -76,7 +76,20 @@ func TestParseCmdLog(t *testing.T) {
 		output  string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{"Empty", "", ParseArgs{}, "", false},
+		{"Invalid regexp", "", ParseArgs{Grep: "["}, "", true},
+		{"Invalid time", "", ParseArgs{Since: "jeejee"}, "", true},
+		{"Single line", "0\tsession\tcmdline\n",
+			ParseArgs{Control: controlArgs{
+				Now:      time.Unix(0, 0),
+			}},
+			"session Just now\tcmdline\n", false},
+
+		{"Multiple lines", `0	session	cmdline
+1450120005	zsh-2755-20151214	go test
+`, ParseArgs{}, `session 1970-01-01T02:00:00	cmdline
+zsh-2755-20151214 2015-12-14T21:06:45	go test
+`, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
