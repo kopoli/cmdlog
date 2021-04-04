@@ -2,9 +2,11 @@ package cmdlib
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/pmezard/go-difflib/difflib"
@@ -38,6 +40,31 @@ func diffStr(a, b interface{}) (ret string) {
 func compare(t *testing.T, msg string, a, b interface{}) {
 	if !structEquals(a, b) {
 		t.Error(msg, "\n", diffStr(a, b))
+	}
+}
+
+func TestFormatRelativeTime(t *testing.T) {
+	tests := []struct {
+		diff time.Duration
+		out  string
+	}{
+		{0, "Just now"},
+		{time.Second, "1s ago"},
+		{time.Second * 2, "2s ago"},
+		{time.Second * 60, "1m ago"},
+		{time.Hour * 2, "2h ago"},
+		{time.Hour * 2 + time.Second, "2h 1s ago"},
+		{time.Hour * 2 + time.Second + time.Minute * 3, "2h 3m 1s ago"},
+		{time.Hour * 24, "1d ago"},
+		{time.Hour * 24 * 7, "7d ago"},
+		{time.Hour * 24 * 31, "31d ago"},
+	}
+	for _, tt := range tests {
+		name := fmt.Sprintf("%d -> %s", tt.diff, tt.out)
+		t.Run(name, func(t *testing.T) {
+			out := FormatRelativeTime(tt.diff)
+			compare(t, "Relative time differs", tt.out, out)
+		})
 	}
 }
 
@@ -135,6 +162,11 @@ func BenchmarkParseCmdLogLineNoAlloc_RegexpMatch(b *testing.B) {
 	}
 }
 
+func BenchmarkFormatRelativeTime(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = FormatRelativeTime(time.Second * time.Duration(i))
+	}
+}
 func TestParseCmdLogLineNoAlloc(t *testing.T) {
 	tests := []struct {
 		name    string
