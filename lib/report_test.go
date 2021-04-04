@@ -128,23 +128,6 @@ func BenchmarkParseCmdLog_Whole(b *testing.B) {
 	}
 }
 
-func BenchmarkParseCmdLogLine(b *testing.B) {
-	out := make([]string, 4)
-	for i := 0; i < b.N; i++ {
-		ParseCmdLogLine("1450120005	zsh-2755-20151214	go test",
-			"", 0, nil, &out)
-	}
-}
-
-func BenchmarkParseCmdLogLine_RegexpMatch(b *testing.B) {
-	out := make([]string, 4)
-	re := regexp.MustCompile("go test")
-	for i := 0; i < b.N; i++ {
-		ParseCmdLogLine("1450120005	zsh-2755-20151214	go test",
-			"", 0, re, &out)
-	}
-}
-
 func BenchmarkParseCmdLogLineNoAlloc(b *testing.B) {
 	out := make([]string, 4)
 	for i := 0; i < b.N; i++ {

@@ -65,38 +65,6 @@ func FormatTime(timeint int64) string {
 	return tm.Format(timeFormat)
 }
 
-// ParseCmdLogLine prepares a single line for display
-func ParseCmdLogLine(line string, session string, since int64, regex *regexp.Regexp,
-	out *[]string) {
-	items := strings.SplitN(line, "\t", 3)
-
-	// The format of the line is improper
-	if len(items) != 3 {
-		return
-	}
-
-	// If session filtering is used and session does not match
-	if session != "" && session != items[1] {
-		return
-	}
-
-	// If regex is given and it does not match
-	if regex != nil && !regex.MatchString(items[2]) {
-		return
-	}
-
-	timeint, err := strconv.ParseInt(items[0], 10, 64)
-	if err != nil {
-		items[0] = "<invalid>"
-	} else if timeint < since {
-		return
-	} else {
-		items[0] = FormatTime(timeint)
-	}
-
-	copy(*out, items)
-}
-
 // ParseCmdLogLineNoAlloc prepares a single line without unnecessary allocation.
 func ParseCmdLogLineNoAlloc(line string, session string, since int64, regex *regexp.Regexp,
 	out *[]string) {
