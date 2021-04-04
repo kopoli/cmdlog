@@ -53,8 +53,8 @@ func TestFormatRelativeTime(t *testing.T) {
 		{time.Second * 2, "2s ago"},
 		{time.Second * 60, "1m ago"},
 		{time.Hour * 2, "2h ago"},
-		{time.Hour * 2 + time.Second, "2h 1s ago"},
-		{time.Hour * 2 + time.Second + time.Minute * 3, "2h 3m 1s ago"},
+		{time.Hour*2 + time.Second, "2h 1s ago"},
+		{time.Hour*2 + time.Second + time.Minute*3, "2h 3m 1s ago"},
 		{time.Hour * 24, "1d ago"},
 		{time.Hour * 24 * 7, "7d ago"},
 		{time.Hour * 24 * 31, "31d ago"},
@@ -158,7 +158,7 @@ func TestParseCmdLogLineNoAlloc(t *testing.T) {
 		line    string
 		session string
 		since   int64
-		now time.Time
+		now     time.Time
 		regex   *regexp.Regexp
 		out     []string
 	}{
