@@ -130,18 +130,20 @@ func BenchmarkParseCmdLog_Whole(b *testing.B) {
 
 func BenchmarkParseCmdLogLineNoAlloc(b *testing.B) {
 	out := make([]string, 4)
+	now := time.Time{}
 	for i := 0; i < b.N; i++ {
 		ParseCmdLogLineNoAlloc("1450120005	zsh-2755-20151214	go test",
-			"", 0, nil, &out)
+			"", 0, now, nil, &out)
 	}
 }
 
 func BenchmarkParseCmdLogLineNoAlloc_RegexpMatch(b *testing.B) {
 	out := make([]string, 4)
 	re := regexp.MustCompile("go test")
+	now := time.Time{}
 	for i := 0; i < b.N; i++ {
 		ParseCmdLogLineNoAlloc("1450120005	zsh-2755-20151214	go test",
-			"", 0, re, &out)
+			"", 0, now, re, &out)
 	}
 }
 
@@ -156,16 +158,17 @@ func TestParseCmdLogLineNoAlloc(t *testing.T) {
 		line    string
 		session string
 		since   int64
+		now time.Time
 		regex   *regexp.Regexp
 		out     []string
 	}{
-		{"Normal line", "1450120005	zsh-2755-20151214	go test", "", 0, nil,
+		{"Normal line", "1450120005	zsh-2755-20151214	go test", "", 0, time.Now(), nil,
 			[]string{"2015-12-14T21:06:45", "zsh-2755-20151214", "go test"}},
 	}
 	out := []string{"", "", ""}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ParseCmdLogLineNoAlloc(tt.line, tt.session, tt.since, tt.regex, &out)
+			ParseCmdLogLineNoAlloc(tt.line, tt.session, tt.since, tt.now, tt.regex, &out)
 		})
 		for i := range out {
 			if tt.out[i] != out[i] {

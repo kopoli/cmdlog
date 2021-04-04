@@ -15,13 +15,12 @@ import (
 )
 
 const (
-	day time.Duration = time.Hour * 24
+	day              time.Duration = time.Hour * 24
 )
 
 var (
-	homeDir          = os.Getenv("HOME")
-	initialReportLen = 1024 * 128
-	timeFormat       = "2006-01-02T15:04:05"
+	homeDir    = os.Getenv("HOME")
+	timeFormat = "2006-01-02T15:04:05"
 )
 
 var magnitudes = []struct {
@@ -54,9 +53,9 @@ func FormatRelativeTime(diff time.Duration) string {
 }
 
 // FormatTime formats the given timestring (UNIX time) to human readable string
-func FormatTime(timeint int64) string {
+func FormatTime(timeint int64, now time.Time) string {
 	tm := time.Unix(timeint, 0)
-	diff := time.Since(tm)
+	diff := now.Sub(tm)
 
 	if diff.Hours() < 24.0*7 {
 		return FormatRelativeTime(diff)
@@ -66,7 +65,7 @@ func FormatTime(timeint int64) string {
 }
 
 // ParseCmdLogLineNoAlloc prepares a single line without unnecessary allocation.
-func ParseCmdLogLineNoAlloc(line string, session string, since int64, regex *regexp.Regexp,
+func ParseCmdLogLineNoAlloc(line string, session string, since int64, now time.Time, regex *regexp.Regexp,
 	out *[]string) {
 
 	var pos [2]int
@@ -99,11 +98,48 @@ func ParseCmdLogLineNoAlloc(line string, session string, since int64, regex *reg
 	} else if timeint < since {
 		return
 	} else {
-		(*out)[0] = FormatTime(timeint)
+		(*out)[0] = FormatTime(timeint, now)
 	}
 
 	(*out)[1] = line[pos[0] : pos[1]-1]
 	(*out)[2] = line[pos[1]:]
+}
+
+type controlArgs struct {
+	JobCount             int
+	Now                  time.Time
+	BufferLineCount      int
+	CompletionBufferSize int
+	ReportLen            int
+}
+
+func defaultControlArgs() controlArgs {
+	return controlArgs{
+		JobCount:             runtime.NumCPU(),
+		Now:                  time.Now(),
+		BufferLineCount:      24,
+		CompletionBufferSize: 1024,
+		ReportLen:            1024 * 128,
+	}
+}
+
+func (ca *controlArgs) FillDefault() {
+	def := defaultControlArgs()
+	if ca.JobCount == 0 {
+		ca.JobCount = def.JobCount
+	}
+	if ca.Now == (time.Time{}) {
+		ca.Now = def.Now
+	}
+	if ca.BufferLineCount == 0 {
+		ca.BufferLineCount = def.BufferLineCount
+	}
+	if ca.CompletionBufferSize == 0 {
+		ca.CompletionBufferSize = def.CompletionBufferSize
+	}
+	if ca.ReportLen == 0 {
+		ca.ReportLen = def.ReportLen
+	}
 }
 
 // ParseArgs is extendable list of arguments for the parseCmdLog function
@@ -112,13 +148,15 @@ type ParseArgs struct {
 	Since   string
 	Grep    string
 	Pwd     bool
-	JobCount int
+	Control controlArgs
 	Output  io.Writer
 }
 
 // ParseCmdLog Parses and prints out the command log from given
 // reader. Possibly filter by session.
 func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
+
+	arg.Control.FillDefault()
 
 	var filterRe *regexp.Regexp = nil
 	if arg.Grep != "" {
@@ -139,14 +177,14 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 		since = sincetm.Unix()
 	}
 
-	out := NewBufferedWriter(arg.Output, 24)
+	out := NewBufferedWriter(arg.Output, arg.Control.BufferLineCount)
 
 	// The format for the report structure:
 	// for each element: timestring, session, command, [cwd]
 	// If the strings in the element are empty, it has been filtered out
 	// Tried to make this a [][4]string, but that was half the speed that
 	// this currently is.
-	report := make([][]string, initialReportLen)
+	report := make([][]string, arg.Control.ReportLen)
 	index := 0
 	reportLock := sync.RWMutex{}
 
@@ -154,11 +192,8 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 		line  string
 		index int
 	}
-	if arg.JobCount == 0 {
-		arg.JobCount = runtime.NumCPU()
-	}
-	jobs := make(chan reportLine, arg.JobCount)
-	completions := make(chan int, arg.JobCount)
+	jobs := make(chan reportLine, arg.Control.JobCount)
+	completions := make(chan int, arg.Control.JobCount)
 
 	wg := sync.WaitGroup{}
 
@@ -168,14 +203,14 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 			reportLock.RLock()
 			report[rl.index] = make([]string, 4)
 			ParseCmdLogLineNoAlloc(string(rl.line), arg.Session,
-				since, filterRe, &report[rl.index])
+				since, arg.Control.Now, filterRe, &report[rl.index])
 			reportLock.RUnlock()
 			completions <- rl.index
 		}
 		wg.Done()
 	}
 
-	for i := 0; i < arg.JobCount*2; i++ {
+	for i := 0; i < arg.Control.JobCount*2; i++ {
 		wg.Add(1)
 		go worker(jobs, completions)
 	}
@@ -202,7 +237,7 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 
 	// Print the whole report as it gets parsed
 	printer := func(completions <-chan int) {
-		complete := make([]int, 0, 1024)
+		complete := make([]int, 0, arg.Control.CompletionBufferSize)
 		firstNotPrinted := 0
 
 		for idx := range completions {
@@ -231,7 +266,7 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 			}
 
 			// Sanity check
-			if len(complete) > 1024 {
+			if len(complete) > arg.Control.CompletionBufferSize {
 				panic(fmt.Sprint("SANITY: Completes length is ", len(complete)))
 			}
 		}
