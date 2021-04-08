@@ -16,6 +16,8 @@ fi
 
 env --ignore-environment ZDOTDIR="$PWD" \
     PATH="$PATH" \
+    CMDLOG_FILE="$PWD/cmdlog.example.log" \
+    CMDLOG_FILTERS="$PWD/cmdlog-filters.example.txt" \
     PS1="cmdlog-test> " \
     TERM="$TERM" \
     zsh --no-globalrcs
