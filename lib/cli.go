@@ -3,10 +3,19 @@ package cmdlib
 import (
 	"flag"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/kopoli/appkit"
 )
+
+func EnvStringFlag(set *flag.FlagSet, name, defvalue, usage, envVar string) *string {
+	val, ok := os.LookupEnv(envVar)
+	if !ok {
+		val = defvalue
+	}
+	return set.String(name, val, fmt.Sprintf("%s ($%s)",usage, envVar))
+}
 
 func Cli(opts appkit.Options, argsin []string) error {
 	help := fmt.Sprintf("Command logging and reporting."+
@@ -15,12 +24,18 @@ func Cli(opts appkit.Options, argsin []string) error {
 	optVersion := base.Flags.Bool("version", false, "Display version")
 	base.Flags.BoolVar(optVersion, "v", false, "Display version")
 
-	optCmdFile := base.Flags.String("file", opts.Get("cmdlog-file", "cmdlogs.debug"),
-		"File name of the command log")
-	optCmdFilterFile := base.Flags.String("filter", opts.Get("cmdlog-filter-file", "cmdlog-filter.debug"),
-		"File name of the command line filter file")
-	optCpuProfile := base.Flags.String("profile", "", "File name to save CPU profile")
-	optMemProfile := base.Flags.String("memprofile", "", "File name to save memory profile")
+	optCmdFile := EnvStringFlag(base.Flags, "file",
+		opts.Get("cmdlog-file", "cmdlogs.debug"),
+		"File name of the command log", "CMDLOG_FILE")
+	optCmdFilterFile := EnvStringFlag(base.Flags, "filter",
+		opts.Get("cmdlog-filter-file", "cmdlog-filter.debug"),
+		"File name of the command line filter file", "CMDLOG_FILTERS")
+	optCpuProfile := EnvStringFlag(base.Flags, "profile",
+		"",
+		"File name to save CPU profile", "CMDLOG_CPUPROFILE")
+	optMemProfile := EnvStringFlag(base.Flags, "memprofile",
+		"",
+		"File name to save memory profile", "CMDLOG_MEMPROFILE")
 
 	log := appkit.NewCommand(base, "log", "Log a new command line")
 
@@ -36,7 +51,7 @@ func Cli(opts appkit.Options, argsin []string) error {
 	optPwd := report.Flags.Bool("pwd", false,
 		"Print also the current directory where the command was run")
 	optSession := report.Flags.String("session", "",
-		"List commands of the given session")
+		"Display commands of the given session")
 	optSince := report.Flags.String("since", "",
 		"Display commands starting from given date")
 	optReverse := report.Flags.Bool("reverse", false,
