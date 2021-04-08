@@ -1,5 +1,9 @@
 # cmdlog log line filter file. One regular expression filter per line.
 # Syntax: empty, whitespace and lines starting with # are ignored.
 
-ls
+# Ignore all that start with space
+^ .*
+
+# Ignore normal ls commands
+^ls *$
 
