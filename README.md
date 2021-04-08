@@ -21,6 +21,8 @@ The filtering view is implemented using https://github.com/kopoli/thelm
 
 ## Demo
 
+![Demo running cmdlog](./_example/cmdlog-demo.svg)
+
 To set up running the demo for yourself do the following:
 
 Install `zsh` via a package manager.
@@ -44,6 +46,8 @@ Start the example with the following commands:
 cd _example
 ./run-example.sh
 ```
+
+(The above demo is recorded using https://github.com/nbedos/termtosvg)
 
 ## Usage
 
