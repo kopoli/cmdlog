@@ -135,10 +135,10 @@ func main() {
 	case "log":
 		handleFilters()
 
-		source := opts.Get("log-source", "<unknown>")
+		session := opts.Get("log-session", "<unknown>")
 		args := opts.Get("log-args", "<unknown>")
 
-		err = log.AppendLine(source, args)
+		err = log.AppendLine(session, args)
 		checkErr(err, "Could not print to log")
 	case "filters":
 		handleFilters()

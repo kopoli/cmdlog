@@ -26,9 +26,9 @@ func Cli(opts appkit.Options, argsin []string) error {
 
 	log.Flags.Usage = func() {
 		out := log.Flags.Output()
-		fmt.Fprintf(out, "Command: log [OPTIONS] SOURCE ARGS[...]\n\n"+
+		fmt.Fprintf(out, "Command: log [OPTIONS] SESSION ARGS[...]\n\n"+
 			"%s\n\nParameters:\n"+
-			"  SOURCE    Command source identifier\n"+
+			"  SESSION   Command session identifier\n"+
 			"  ARGS      Command line arguments\n", log.Help)
 	}
 
@@ -68,7 +68,7 @@ func Cli(opts appkit.Options, argsin []string) error {
 			return fmt.Errorf("Invalid arguments for log: %s",
 				strings.Join(args, " "))
 		}
-		opts.Set("log-source", args[0])
+		opts.Set("log-session", args[0])
 		opts.Set("log-args", strings.Join(args[1:], " "))
 	case "report":
 		if *optPwd {
