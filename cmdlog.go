@@ -75,6 +75,7 @@ func main() {
 	opts.Set("program-buildgoos", buildGOOS)
 	opts.Set("program-buildgoarch", buildGOARCH)
 	opts.Set("cmdlog-file", cmdlogFile)
+	opts.Set("cmdlog-filter-file", cmdlogFilterFile)
 
 	exitValue := 0
 
