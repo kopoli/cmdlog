@@ -266,11 +266,6 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 				complete = complete[next:]
 				firstNotPrinted = limit
 			}
-
-			// Sanity check
-			if len(complete) > arg.Control.CompletionBufferSize {
-				panic(fmt.Sprint("SANITY: Completes length is ", len(complete)))
-			}
 		}
 		printWg.Done()
 	}
