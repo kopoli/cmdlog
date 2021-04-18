@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -81,7 +82,7 @@ func TestParseCmdLog(t *testing.T) {
 		{"Invalid time", "", ParseArgs{Since: "jeejee"}, "", true},
 		{"Single line", "0\tsession\tcmdline\n",
 			ParseArgs{Control: controlArgs{
-				Now:      time.Unix(0, 0),
+				Now: time.Unix(0, 0),
 			}},
 			"session Just now\tcmdline\n", false},
 
@@ -122,7 +123,7 @@ func BenchmarkParseCmdLog_Regexp(b *testing.B) {
 	input := &testLineReader{buf: bytes.NewBufferString(testData)}
 	pa := ParseArgs{
 		Output: ioutil.Discard,
-		Grep:   "dpkg",
+		Grep:   "debug",
 	}
 
 	for i := 0; i < b.N; i++ {
@@ -135,6 +136,24 @@ func BenchmarkParseCmdLog_Whole(b *testing.B) {
 	pa := ParseArgs{
 		Output: ioutil.Discard,
 	}
+
+	for i := 0; i < b.N; i++ {
+		_ = ParseCmdLog(input, pa)
+	}
+}
+
+func BenchmarkParseCmdLog_HugeGrep(b *testing.B) {
+	s := "1450120005	zsh-2755-20151214	go test" +
+		strings.Repeat(testData, 2048) +
+		"1450120005	zsh-2755-20151214	go test"
+	input := &testLineReader{buf: bytes.NewBufferString(s)}
+
+	pa := ParseArgs{
+		Output: ioutil.Discard,
+		Grep:   "go test",
+	}
+
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		_ = ParseCmdLog(input, pa)
