@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	day              time.Duration = time.Hour * 24
+	day time.Duration = time.Hour * 24
 )
 
 var (
@@ -24,13 +24,16 @@ var (
 )
 
 var magnitudes = []struct {
-	mag  time.Duration
-	name string
+	mag time.Duration
+	// If the given magnitude is above this, do not continue listing
+	// smaller magnitudes.
+	minimumBreak int64
+	name         string
 }{
-	{day, "d"},
-	{time.Hour, "h"},
-	{time.Minute, "m"},
-	{time.Second, "s"},
+	{day, 2, "d"},
+	{time.Hour, 12, "h"},
+	{time.Minute, 30, "m"},
+	{time.Second, 60, "s"},
 }
 
 // FormatRelativeTime converts a duration to a string according to magnitudes above
@@ -46,6 +49,9 @@ func FormatRelativeTime(diff time.Duration) string {
 		diff = diff % mag.mag
 		if count > 0 {
 			ret = ret + strconv.FormatInt(int64(count), 10) + mag.name + " "
+		}
+		if int64(count) > mag.minimumBreak {
+			break
 		}
 	}
 
