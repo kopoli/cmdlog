@@ -14,7 +14,7 @@ func EnvStringFlag(set *flag.FlagSet, name, defvalue, usage, envVar string) *str
 	if !ok {
 		val = defvalue
 	}
-	return set.String(name, val, fmt.Sprintf("%s ($%s)",usage, envVar))
+	return set.String(name, val, fmt.Sprintf("%s ($%s)", usage, envVar))
 }
 
 func Cli(opts appkit.Options, argsin []string) error {
@@ -30,7 +30,7 @@ func Cli(opts appkit.Options, argsin []string) error {
 	optCmdFilterFile := EnvStringFlag(base.Flags, "filter",
 		opts.Get("cmdlog-filter-file", "cmdlog-filter.debug"),
 		"File name of the command line filter file", "CMDLOG_FILTERS")
-	optCpuProfile := EnvStringFlag(base.Flags, "profile",
+	optCPUProfile := EnvStringFlag(base.Flags, "profile",
 		"",
 		"File name to save CPU profile", "CMDLOG_CPUPROFILE")
 	optMemProfile := EnvStringFlag(base.Flags, "memprofile",
@@ -72,7 +72,7 @@ func Cli(opts appkit.Options, argsin []string) error {
 
 	opts.Set("cmdlog-file", *optCmdFile)
 	opts.Set("cmdlog-filter-file", *optCmdFilterFile)
-	opts.Set("profile-cpu-file", *optCpuProfile)
+	opts.Set("profile-cpu-file", *optCPUProfile)
 	opts.Set("profile-mem-file", *optMemProfile)
 
 	cmd := opts.Get("cmdline-command", "")
@@ -80,7 +80,7 @@ func Cli(opts appkit.Options, argsin []string) error {
 	case "log":
 		args := appkit.SplitArguments(opts.Get("cmdline-args", ""))
 		if len(args) < 2 {
-			return fmt.Errorf("Invalid arguments for log: %s",
+			return fmt.Errorf("invalid arguments for log: %s",
 				strings.Join(args, " "))
 		}
 		opts.Set("log-session", args[0])

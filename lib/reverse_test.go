@@ -54,7 +54,6 @@ func TestReverseReader(t *testing.T) {
 				t.Errorf("Expected %d lines, got %d lines, Contents:\n%s",
 					len(tt.lines), len(lines), diffStr(tt.lines, lines))
 				return
-
 			}
 			for i := range tt.lines {
 				if !structEquals(tt.lines[i], lines[i]) {

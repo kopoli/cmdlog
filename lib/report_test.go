@@ -106,7 +106,7 @@ zsh-2755-20151214 2015-12-14T21:06:45	go test
 	}
 }
 
-var testData string = `
+var testData = `
 1463382163	zsh-5604-20160516	Started shell session
 1463382167	zsh-5604-20160516	Exited shell session
 1463382174	zsh-16168-20160503	gobu -help

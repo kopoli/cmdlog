@@ -33,16 +33,17 @@ func NewReverseReader(f io.ReadSeeker) (ret *ReverseReader, err error) {
 	return
 }
 
-func (r *ReverseReader) fillBuffer() (err error) {
+func (r *ReverseReader) fillBuffer() error {
+	var err error
 	// No more data, return EOF
 	if r.pos == 0 && r.bufpos == 0 {
 		err = io.EOF
-		return
+		return err
 	}
 
 	// If all data has been read to the buffer
 	if r.pos == 0 {
-		return
+		return nil
 	}
 
 	readlen := len(r.buf) - r.bufpos
@@ -67,14 +68,14 @@ func (r *ReverseReader) fillBuffer() (err error) {
 	// Set the read position to the new place
 	r.pos, err = r.fp.Seek(r.pos-int64(readlen), io.SeekStart)
 	if err != nil {
-		return
+		return err
 	}
 
 	// Read data to the front part of the buffer
 	var n int
 	n, err = r.fp.Read(r.buf[:readlen])
 	if err != nil {
-		return
+		return err
 	}
 	if n != readlen {
 		// TODO proper error
@@ -82,11 +83,10 @@ func (r *ReverseReader) fillBuffer() (err error) {
 			"bytes of data, but only", n, "was read"))
 	}
 	r.bufpos = readlen + r.bufpos
-	return
+	return nil
 }
 
 func (r *ReverseReader) ReadLine() (line string, err error) {
-
 	idx := bytes.LastIndex(r.buf[:r.bufpos], []byte{'\n'})
 
 	// if not found in the current buffer
@@ -105,7 +105,7 @@ func (r *ReverseReader) ReadLine() (line string, err error) {
 		}
 	}
 	if idx > 0 || (idx == 0 && r.buf[idx] == '\n') {
-		idx += 1
+		idx++
 	}
 
 	sb := strings.Builder{}
@@ -114,7 +114,7 @@ func (r *ReverseReader) ReadLine() (line string, err error) {
 
 	r.bufpos = idx
 	if idx > 0 || (idx == 0 && r.buf[idx] == '\n') {
-		r.bufpos -= 1
+		r.bufpos--
 	}
 
 	return sb.String(), nil

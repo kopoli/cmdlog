@@ -17,7 +17,7 @@ var (
 	buildGOOS   = "Undefined"
 	buildGOARCH = "Undefined"
 
-	cmdlogFile = os.ExpandEnv("${HOME}/.cmdlog")
+	cmdlogFile       = os.ExpandEnv("${HOME}/.cmdlog")
 	cmdlogFilterFile = os.ExpandEnv("${HOME}/.cmdlog-filters")
 )
 
@@ -170,7 +170,7 @@ func main() {
 		err = cmdlib.ParseCmdLog(lr, arg)
 		checkErr(err, "Parsing the command log failed")
 	default:
-		err = fmt.Errorf("Invalid command")
+		err = fmt.Errorf("invalid command")
 		checkErr(err, "Running cmdlog failed")
 	}
 }

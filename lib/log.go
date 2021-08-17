@@ -19,20 +19,19 @@ var (
 
 func FileExists(filename string) bool {
 	_, err := os.Stat(filename)
-	return ! (err != nil && os.IsNotExist(err))
+	return !(err != nil && os.IsNotExist(err))
 }
 
-
 type Log struct {
-	LogFile string
-	Filters []string
+	LogFile    string
+	Filters    []string
 	FilterFile string
 }
 
-func CreateLog(logfile, filterfile string) (*Log) {
+func CreateLog(logfile, filterfile string) *Log {
 	ret := &Log{
-		LogFile: logfile,
-		Filters: defaultFilters,
+		LogFile:    logfile,
+		Filters:    defaultFilters,
 		FilterFile: filterfile,
 	}
 
@@ -40,8 +39,7 @@ func CreateLog(logfile, filterfile string) (*Log) {
 }
 
 // AppendLine creates a log line to the given logfile
-func (l *Log)AppendLine(session string, args string) error {
-
+func (l *Log) AppendLine(session string, args string) error {
 	// change to single line command
 	re := regexp.MustCompile("[\r\n]+")
 	args = re.ReplaceAllString(args, " ")
@@ -75,7 +73,7 @@ func (l *Log)AppendLine(session string, args string) error {
 
 // SaveDefaultFilters saves the default filters as an example if such file
 // does not yet exist.
-func (l *Log)SaveDefaultFilters() error {
+func (l *Log) SaveDefaultFilters() error {
 	if FileExists(l.FilterFile) {
 		return nil
 	}
@@ -94,7 +92,7 @@ func (l *Log)SaveDefaultFilters() error {
 	return ioutil.WriteFile(l.FilterFile, out, 0600)
 }
 
-func (l *Log)LoadFilters() error {
+func (l *Log) LoadFilters() error {
 	var err error
 
 	// Do nothing if filter file is not found
@@ -145,7 +143,7 @@ func (l *Log)LoadFilters() error {
 	l.Filters = filters
 
 	if len(filterErrors.String()) > 0 {
-		return fmt.Errorf("Parsing filters failed: %s", filterErrors.String())
+		return fmt.Errorf("parsing filters failed: %s", filterErrors.String())
 	}
 
 	return nil

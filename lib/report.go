@@ -46,7 +46,7 @@ func FormatRelativeTime(diff time.Duration) string {
 
 	for _, mag := range magnitudes {
 		count := diff / mag.mag
-		diff = diff % mag.mag
+		diff %= mag.mag
 		if count > 0 {
 			ret = ret + strconv.FormatInt(int64(count), 10) + mag.name + " "
 		}
@@ -73,7 +73,6 @@ func FormatTime(timeint int64, now time.Time) string {
 // ParseCmdLogLineNoAlloc prepares a single line without unnecessary allocation.
 func ParseCmdLogLineNoAlloc(line string, session string, since int64, now time.Time, regex *regexp.Regexp,
 	out *[]string) {
-
 	var pos [2]int
 	start := 0
 	for i := range pos {
@@ -99,11 +98,12 @@ func ParseCmdLogLineNoAlloc(line string, session string, since int64, now time.T
 	}
 
 	timeint, err := strconv.ParseInt(line[:pos[0]-1], 10, 64)
-	if err != nil {
+	switch {
+	case err != nil:
 		(*out)[0] = "<invalid>"
-	} else if timeint < since {
+	case timeint < since:
 		return
-	} else {
+	default:
 		(*out)[0] = FormatTime(timeint, now)
 	}
 
@@ -161,24 +161,23 @@ type ParseArgs struct {
 // ParseCmdLog Parses and prints out the command log from given
 // reader. Possibly filter by session.
 func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
-
 	arg.Control.FillDefault()
 
-	var filterRe *regexp.Regexp = nil
+	var filterRe *regexp.Regexp
 	if arg.Grep != "" {
 		filterRe = regexp.MustCompile(`\s+`)
 		arg.Grep = filterRe.ReplaceAllString(arg.Grep, ".*")
 		filterRe, err = regexp.Compile(arg.Grep)
 		if err != nil {
-			return fmt.Errorf("Failed to compile regexp \"%s\": %s", arg.Grep, err)
+			return fmt.Errorf("failed to compile regexp \"%s\": %s", arg.Grep, err)
 		}
 	}
 
-	var since int64 = 0
+	var since int64
 	if arg.Since != "" {
 		sincetm, err := time.ParseInLocation(timeFormat, arg.Since, time.Local)
 		if err != nil {
-			return fmt.Errorf("Parsing given since failed: %s", err)
+			return fmt.Errorf("parsing given since failed: %s", err)
 		}
 		since = sincetm.Unix()
 	}
@@ -208,7 +207,7 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 		for rl := range jobs {
 			reportLock.RLock()
 			report[rl.index] = make([]string, 4)
-			ParseCmdLogLineNoAlloc(string(rl.line), arg.Session,
+			ParseCmdLogLineNoAlloc(rl.line, arg.Session,
 				since, arg.Control.Now, filterRe, &report[rl.index])
 			reportLock.RUnlock()
 			completions <- rl.index
@@ -231,7 +230,7 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 			if arg.Session == "" {
 				line = report[pos][1] + " "
 			}
-			line = line + report[pos][0]
+			line += report[pos][0]
 			if arg.Pwd {
 				line = line + "\t" + report[pos][3]
 			}
@@ -252,8 +251,8 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 			complete = append(complete, idx)
 			sort.Ints(complete)
 
-			var limit int = firstNotPrinted
-			var next int = len(complete)
+			var limit = firstNotPrinted
+			var next = len(complete)
 
 			// Get the number of sequential items that can be printed
 			for i := range complete {
@@ -261,7 +260,7 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 					next = i
 					break
 				}
-				limit += 1
+				limit++
 			}
 
 			if limit != firstNotPrinted {
@@ -297,7 +296,7 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("Error reading log: %v", err)
+			return fmt.Errorf("error reading log: %v", err)
 		}
 		if index >= cap(report)-1 {
 			reportLock.Lock()
@@ -308,7 +307,7 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 			reportLock.Unlock()
 		}
 		jobs <- reportLine{line, index}
-		index = index + 1
+		index++
 	}
 	close(jobs)
 	wg.Wait()
@@ -329,16 +328,17 @@ func ParseCmdLog(reader LineReader, arg ParseArgs) (err error) {
 func determineDirectory(previous string, cmd string) string {
 	ret := ""
 
-	if cmd == "s" {
+	switch {
+	case cmd == "s":
 		ret = ".."
-	} else if strings.HasPrefix(cmd, "cd") {
+	case strings.HasPrefix(cmd, "cd"):
 		parts := strings.SplitN(cmd, " ", 2)
 		if len(parts) == 1 {
 			ret = homeDir
 		} else {
 			ret = parts[1]
 		}
-	} else if strings.HasPrefix(cmd, "Started shell session: ") {
+	case strings.HasPrefix(cmd, "Started shell session: "):
 		parts := strings.SplitN(cmd, " ", 4)
 		ret = parts[3]
 	}

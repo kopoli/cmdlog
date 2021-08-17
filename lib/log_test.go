@@ -36,7 +36,7 @@ func TestLog(t *testing.T) {
 					true:  "exist",
 					false: "not exist",
 				}
-				return fmt.Errorf("File %s is expected to %s but does %s",
+				return fmt.Errorf("file %s is expected to %s but does %s",
 					filename, msg[should], msg[exist])
 			}
 			return nil
@@ -53,7 +53,7 @@ func TestLog(t *testing.T) {
 		return func() error {
 			err := opLoad()()
 			if err == nil {
-				return fmt.Errorf("Expected error loading filters")
+				return fmt.Errorf("expected error loading filters")
 			}
 			return nil
 		}
@@ -84,7 +84,7 @@ func TestLog(t *testing.T) {
 			}
 
 			if !re.Match(data) {
-				return fmt.Errorf("Expected regexp: \"%s\" to match contents:\n%s", contentsRe, string(data))
+				return fmt.Errorf("expected regexp: \"%s\" to match contents:\n%s", contentsRe, string(data))
 			}
 			return nil
 		}
@@ -253,7 +253,7 @@ func TestLog(t *testing.T) {
 			contentsForRemoval,
 			contentsForRemoval,
 			[]opfunc{
-				opAppendLongLine("ses", "something", 32 * 1024),
+				opAppendLongLine("ses", "something", 32*1024),
 				opExpectLogfile(`^[0-9]+\tses\t(something)+\n$`),
 			},
 			defaultFilters,
