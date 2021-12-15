@@ -18,7 +18,7 @@ type ReverseReader struct {
 	bufpos int
 }
 
-func NewReverseReader(f io.ReadSeeker) (ret *ReverseReader, err error) {
+func NewReverseReader(f io.ReadSeeker, maximumLineLength int) (ret *ReverseReader, err error) {
 	ret = &ReverseReader{
 		fp:     f,
 		buf:    make([]byte, maximumLineLength),
@@ -57,7 +57,7 @@ func (r *ReverseReader) fillBuffer() error {
 	// buffer
 	if readlen == 0 {
 		panic(fmt.Sprint("A line detected that is longer than ",
-			maximumLineLength, "bytes"))
+			len(r.buf), "bytes"))
 	}
 
 	// If there is data still left in the buffer
@@ -99,7 +99,7 @@ func (r *ReverseReader) ReadLine() (line string, err error) {
 		if idx == -1 {
 			if r.pos > 0 {
 				panic(fmt.Sprint("2ND A line detected that is longer than ",
-					maximumLineLength, "bytes"))
+					len(r.buf), "bytes"))
 			}
 			idx = 0
 		}

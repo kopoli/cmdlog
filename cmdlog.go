@@ -19,6 +19,8 @@ var (
 
 	cmdlogFile       = os.ExpandEnv("${HOME}/.cmdlog")
 	cmdlogFilterFile = os.ExpandEnv("${HOME}/.cmdlog-filters")
+
+	maximumLineLength = 160 * 1024
 )
 
 type profiler struct {
@@ -161,10 +163,10 @@ func main() {
 		}
 		var lr cmdlib.LineReader
 		if opts.IsSet("report-reverse") {
-			lr, err = cmdlib.NewReverseReader(fp)
+			lr, err = cmdlib.NewReverseReader(fp, maximumLineLength)
 			checkErr(err, "Creating a new reverse reader failed")
 		} else {
-			lr = cmdlib.NewBufferedReader(fp)
+			lr = cmdlib.NewBufferedReader(fp, maximumLineLength)
 		}
 
 		err = cmdlib.ParseCmdLog(lr, arg)

@@ -110,7 +110,7 @@ func (l *Log) LoadFilters() error {
 
 	filterErrors := strings.Builder{}
 
-	reader := NewBufferedReader(fp)
+	reader := NewBufferedReader(fp, 1024)
 
 	linenum := 0
 	filters := []string{}

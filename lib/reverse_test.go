@@ -7,7 +7,7 @@ import (
 )
 
 func TestReverseReader(t *testing.T) {
-	maximumLineLength = 10
+	maximumLineLength := 10
 
 	tests := []struct {
 		name    string
@@ -26,7 +26,7 @@ func TestReverseReader(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var r *ReverseReader
 			var err error
-			r, err = NewReverseReader(bytes.NewReader([]byte(tt.data)))
+			r, err = NewReverseReader(bytes.NewReader([]byte(tt.data)), maximumLineLength)
 			if err != nil {
 				t.Errorf("Creating new reader failed: %v", err)
 				return
@@ -69,9 +69,9 @@ func BenchmarkReverseReader(b *testing.B) {
 	var r *ReverseReader
 	var err error
 
-	maximumLineLength = 1024
+	maximumLineLength := 1024
 
-	r, err = NewReverseReader(bytes.NewReader([]byte(testData)))
+	r, err = NewReverseReader(bytes.NewReader([]byte(testData)), maximumLineLength)
 	if err != nil {
 		b.Errorf("Creating a reverse reader from testData failed: %v", err)
 		return
